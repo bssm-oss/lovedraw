@@ -27,7 +27,7 @@
     },
     "rooms": {
       "$roomId": {
-        ".read": "auth != null && (data.child('members').child(auth.uid).val() === true || data.child('hostUid').val() === auth.uid || data.child('guestUid').val() === auth.uid)",
+        ".read": "auth != null && (data.child('status').val() === 'waiting' || data.child('members').child(auth.uid).val() === true || data.child('hostUid').val() === auth.uid || data.child('guestUid').val() === auth.uid)",
         ".write": "auth != null && ((!data.exists() && newData.exists() && newData.child('roomId').val() === $roomId && newData.child('hostUid').val() === auth.uid && newData.child('members').child(auth.uid).val() === true && newData.child('activeUserCount').val() === 1 && newData.child('status').val() === 'waiting') || (data.exists() && !newData.exists() && data.child('hostUid').val() === auth.uid && data.child('activeUserCount').val() === 1 && data.child('status').val() === 'waiting') || (data.exists() && data.child('status').val() === 'waiting' && !data.child('guestUid').exists() && newData.child('roomId').val() === data.child('roomId').val() && newData.child('roomCode').val() === data.child('roomCode').val() && newData.child('hostUid').val() === data.child('hostUid').val() && newData.child('guestUid').val() === auth.uid && newData.child('members').child(auth.uid).val() === true && newData.child('members').child(data.child('hostUid').val()).val() === true && newData.child('activeUserCount').val() === 2 && newData.child('status').val() === 'active'))",
         "roomId": {
           ".validate": "newData.isString() && newData.val() === $roomId"
@@ -103,7 +103,7 @@
         },
         "drawingSnapshots": {
           "$drawingId": {
-            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && (!newData.exists() || ((!data.exists() && newData.child('authorUid').val() === auth.uid) || (data.exists() && newData.child('authorUid').val() === data.child('authorUid').val())))",
+            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && ((!newData.exists() && data.child('authorUid').val() === auth.uid) || (newData.exists() && ((!data.exists() && newData.child('authorUid').val() === auth.uid) || (data.exists() && newData.child('authorUid').val() === data.child('authorUid').val()))))",
             ".validate": "!newData.exists() || (newData.child('drawingId').val() === $drawingId && newData.child('authorUid').isString() && newData.child('imageUrl').isString() && newData.child('storagePath').isString() && newData.child('createdAt').isNumber())"
           }
         },
@@ -120,43 +120,49 @@
         },
         "notes": {
           "$noteId": {
-            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true",
+            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && ((!newData.exists() && data.child('authorUid').val() === auth.uid) || (newData.exists() && ((!data.exists() && newData.child('authorUid').val() === auth.uid) || (data.exists() && newData.child('authorUid').val() === data.child('authorUid').val()))))",
             ".validate": "!newData.exists() || (newData.child('noteId').val() === $noteId && ((!data.exists() && newData.child('authorUid').val() === auth.uid) || (data.exists() && newData.child('authorUid').val() === data.child('authorUid').val())) && newData.child('message').isString() && newData.child('message').val().length <= 120 && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber())"
           }
         },
         "datePlans": {
+          ".read": "auth != null && data.parent().child('members').child(auth.uid).val() === true",
           "$planId": {
-            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && (!newData.exists() || ((!data.exists() && newData.child('createdByUid').val() === auth.uid) || (data.exists() && newData.child('createdByUid').val() === data.child('createdByUid').val())))",
+            ".read": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true",
+            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && ((!newData.exists() && data.child('createdByUid').val() === auth.uid) || (newData.exists() && ((!data.exists() && newData.child('createdByUid').val() === auth.uid) || (data.exists() && newData.child('createdByUid').val() === data.child('createdByUid').val()))))",
             ".validate": "!newData.exists() || (newData.child('planId').val() === $planId && newData.child('title').isString() && newData.child('title').val().length > 0 && newData.child('title').val().length <= 80 && newData.child('description').isString() && (newData.child('status').val() === 'upcoming' || newData.child('status').val() === 'saved' || newData.child('status').val() === 'past') && (newData.child('mode').val() === 'nearby' || newData.child('mode').val() === 'long_distance' || newData.child('mode').val() === 'home') && (newData.child('tone').val() === 'safe' || newData.child('tone').val() === 'playful' || newData.child('tone').val() === 'bold') && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber())"
           }
         },
         "bucketList": {
           "$itemId": {
-            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && (!newData.exists() || ((!data.exists() && newData.child('createdByUid').val() === auth.uid) || (data.exists() && newData.child('createdByUid').val() === data.child('createdByUid').val())))",
+            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && ((!newData.exists() && data.child('createdByUid').val() === auth.uid) || (newData.exists() && ((!data.exists() && newData.child('createdByUid').val() === auth.uid) || (data.exists() && newData.child('createdByUid').val() === data.child('createdByUid').val()))))",
             ".validate": "!newData.exists() || (newData.child('itemId').val() === $itemId && newData.child('title').isString() && newData.child('title').val().length > 0 && newData.child('title').val().length <= 80 && (newData.child('status').val() === 'wish' || newData.child('status').val() === 'planned' || newData.child('status').val() === 'done') && newData.child('createdByUid').isString() && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber())"
           }
         },
         "memories": {
+          ".read": "auth != null && data.parent().child('members').child(auth.uid).val() === true",
           "$memoryId": {
-            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && (!newData.exists() || ((!data.exists() && newData.child('createdByUid').val() === auth.uid) || (data.exists() && newData.child('createdByUid').val() === data.child('createdByUid').val())))",
+            ".read": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true",
+            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && ((!newData.exists() && data.child('createdByUid').val() === auth.uid) || (newData.exists() && ((!data.exists() && newData.child('createdByUid').val() === auth.uid) || (data.exists() && newData.child('createdByUid').val() === data.child('createdByUid').val()))))",
             ".validate": "!newData.exists() || (newData.child('memoryId').val() === $memoryId && newData.child('title').isString() && newData.child('title').val().length > 0 && newData.child('title').val().length <= 80 && newData.child('date').isNumber() && newData.child('createdByUid').isString() && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber())"
           }
         },
         "quizAnswers": {
           "$answerId": {
-            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && (!newData.exists() || ((!data.exists() && newData.child('uid').val() === auth.uid) || (data.exists() && newData.child('uid').val() === data.child('uid').val())))",
+            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && ((!newData.exists() && data.child('uid').val() === auth.uid) || (newData.exists() && ((!data.exists() && newData.child('uid').val() === auth.uid) || (data.exists() && newData.child('uid').val() === data.child('uid').val()))))",
             ".validate": "!newData.exists() || (newData.child('answerId').val() === $answerId && newData.child('questionId').isString() && newData.child('uid').isString() && newData.child('answer').isString() && newData.child('answer').val().length <= 180 && newData.child('createdAt').isNumber())"
           }
         },
         "quizDiscussions": {
           "$discussionId": {
-            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && (!newData.exists() || ((!data.exists() && newData.child('authorUid').val() === auth.uid) || (data.exists() && newData.child('authorUid').val() === data.child('authorUid').val())))",
+            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && ((!newData.exists() && data.child('authorUid').val() === auth.uid) || (newData.exists() && ((!data.exists() && newData.child('authorUid').val() === auth.uid) || (data.exists() && newData.child('authorUid').val() === data.child('authorUid').val()))))",
             ".validate": "!newData.exists() || (newData.child('discussionId').val() === $discussionId && newData.child('questionId').isString() && newData.child('authorUid').isString() && newData.child('message').isString() && newData.child('message').val().length <= 220 && newData.child('createdAt').isNumber())"
           }
         },
         "dailySparks": {
+          ".read": "auth != null && data.parent().child('members').child(auth.uid).val() === true",
           "$dateKey": {
-            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && (!newData.child('answers').exists() || newData.child('answers').val() === data.child('answers').val())",
+            ".read": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true",
+            ".write": "auth != null && data.parent().parent().child('members').child(auth.uid).val() === true && newData.exists() && (!newData.child('answers').exists() || newData.child('answers').val() === data.child('answers').val())",
             ".validate": "!newData.exists() || (newData.child('sparkId').val() === $dateKey && newData.child('question').isString() && newData.child('dateKey').val() === $dateKey)",
             "answers": {
               "$uid": {
@@ -169,7 +175,7 @@
         "locationShares": {
           "$uid": {
             ".write": "auth != null && auth.uid === $uid && data.parent().parent().child('members').child(auth.uid).val() === true",
-            ".validate": "!newData.exists() || (newData.child('uid').val() === $uid && newData.child('enabled').isBoolean() && newData.child('isApproximateOnly').isBoolean())"
+            ".validate": "!newData.exists() || (newData.child('uid').val() === $uid && newData.child('enabled').isBoolean() && newData.child('isApproximateOnly').isBoolean() && ((!newData.child('latitude').exists() && !newData.child('longitude').exists()) || (newData.child('enabled').val() === true && newData.child('latitude').isNumber() && newData.child('longitude').isNumber() && newData.child('consentedUids').child(auth.uid).val() === true && ((data.parent().parent().child('hostUid').val() === auth.uid && data.parent().parent().child('guestUid').isString() && data.parent().child(data.parent().parent().child('guestUid').val()).child('enabled').val() === true && newData.child('consentedUids').child(data.parent().parent().child('guestUid').val()).val() === true) || (data.parent().parent().child('guestUid').val() === auth.uid && data.parent().child(data.parent().parent().child('hostUid').val()).child('enabled').val() === true && newData.child('consentedUids').child(data.parent().parent().child('hostUid').val()).val() === true)))))"
           }
         },
         "$other": {

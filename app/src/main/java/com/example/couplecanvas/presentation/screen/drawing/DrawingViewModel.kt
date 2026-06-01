@@ -22,8 +22,10 @@ import com.example.couplecanvas.data.repository.AuthRepository
 import com.example.couplecanvas.data.repository.DrawingRepository
 import com.example.couplecanvas.data.repository.RoomRepository
 import com.example.couplecanvas.feature.widgets.updateCoupleWidgets
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -93,7 +95,7 @@ class DrawingViewModel(
                         val localPreviewPath = runCatching {
                             widgetStateStore.cacheLatestDrawingPreviewFromUrl(roomId, imageUrl)
                         }.getOrNull()
-                        widgetStateStore.updateLatestDrawing(roomId, imageUrl, localPreviewPath, ::updateCoupleWidgets)
+                        widgetStateStore.updateLatestDrawing(roomId, imageUrl, localPreviewPath, afterSave = ::updateCoupleWidgets)
                     }
                 }
             }
@@ -180,7 +182,7 @@ class DrawingViewModel(
             expiresAt = if (brush.laser && !brush.eraser) now + Stroke.LASER_TTL_MS else 0L,
             points = mapOf(pointKey() to point),
         )
-        _uiState.value = _uiState.value.copy(localActiveStroke = stroke)
+        _uiState.value = _uiState.value.copy(localActiveStroke = stroke, nowMillis = now)
         sendActiveThrottled(force = true)
     }
 
@@ -191,17 +193,19 @@ class DrawingViewModel(
             points = stroke.points + (pointKey() to DrawingPoint(x, y, now)),
             expiresAt = if (stroke.expiresAt > 0L) now + Stroke.LASER_TTL_MS else 0L,
         )
-        _uiState.value = _uiState.value.copy(localActiveStroke = updated)
+        _uiState.value = _uiState.value.copy(localActiveStroke = updated, nowMillis = now)
         sendActiveThrottled()
     }
 
     fun finishStroke() {
         val uid = authRepository.currentUser?.uid ?: return
         val stroke = _uiState.value.localActiveStroke ?: return
+        val now = System.currentTimeMillis()
         val finishedStroke = stroke.refreshedLaserExpiry()
         _uiState.value = _uiState.value.copy(
             localActiveStroke = null,
             localPendingStrokes = (_uiState.value.localPendingStrokes + finishedStroke).dedupPendingStrokes(),
+            nowMillis = now,
         )
         activeSendJob?.cancel()
         scheduleLaserRemoval(finishedStroke)
@@ -297,7 +301,7 @@ class DrawingViewModel(
                 drawingRepository.saveSnapshot(roomId, uid, bitmap, caption, context.applicationContext) to localPreviewPath
             }.onSuccess { (snapshot, localPreviewPath) ->
                 if (widgetStateStore.shouldUpdateRoom(roomId)) {
-                    widgetStateStore.updateLatestDrawing(roomId, snapshot.imageUrl, localPreviewPath, ::updateCoupleWidgets)
+                    widgetStateStore.updateLatestDrawing(roomId, snapshot.imageUrl, localPreviewPath, afterSave = ::updateCoupleWidgets)
                 }
                 _uiState.value = _uiState.value.copy(
                     isSavingSnapshot = false,
@@ -350,7 +354,12 @@ class DrawingViewModel(
     }
 
     private fun List<Stroke>.withReceiverLocalLaserExpiry(uid: String?, now: Long): List<Stroke> =
-        map { stroke ->
+        also { strokes ->
+            val currentStrokeIds = strokes.mapTo(mutableSetOf()) { it.strokeId }
+            remoteLaserExpiries.entries.removeAll { (strokeId, expiry) ->
+                expiry.localExpiresAt <= now || strokeId !in currentStrokeIds
+            }
+        }.map { stroke ->
             if (stroke.expiresAt <= 0L || stroke.ownerUid == uid) return@map stroke
             val cached = remoteLaserExpiries[stroke.strokeId]
             if (cached != null && cached.sourceExpiresAt >= stroke.expiresAt) {
@@ -389,7 +398,11 @@ class DrawingViewModel(
 
     override fun onCleared() {
         val uid = authRepository.currentUser?.uid
-        if (uid != null) viewModelScope.launch { roomRepository.updateOnlineStatus(roomId, uid, false) }
+        if (uid != null) {
+            CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                runCatching { roomRepository.updateOnlineStatus(roomId, uid, false) }
+            }
+        }
         super.onCleared()
     }
 
@@ -405,12 +418,16 @@ class DrawingViewModel(
         val backgroundColor = Color.rgb(255, 255, 255)
         canvas.drawColor(backgroundColor)
         loadBackgroundBitmap(background?.imageUrl)?.let { backgroundBitmap ->
-            canvas.drawBitmap(
-                backgroundBitmap,
-                null,
-                android.graphics.Rect(0, 0, width, height),
-                Paint(Paint.ANTI_ALIAS_FLAG),
-            )
+            try {
+                canvas.drawBitmap(
+                    backgroundBitmap,
+                    null,
+                    android.graphics.Rect(0, 0, width, height),
+                    Paint(Paint.ANTI_ALIAS_FLAG),
+                )
+            } finally {
+                backgroundBitmap.recycle()
+            }
         }
         val strokeBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val strokeCanvas = Canvas(strokeBitmap)

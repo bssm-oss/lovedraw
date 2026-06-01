@@ -85,30 +85,63 @@ class RoomRepository(private val firebase: FirebaseProvider) {
         val roomId = firebase.root.child("roomCodes").child(normalized).get().await().getValue(String::class.java)
             ?: return JoinRoomResult.NotFound
 
-        var outcome: JoinRoomResult = JoinRoomResult.Error("입장에 실패했어요")
         val ref = firebase.root.child("rooms").child(roomId)
-        val status = ref.child("status").get().await().getValue(String::class.java) ?: return JoinRoomResult.NotFound
-        if (status == RoomStatus.Closed.value) return JoinRoomResult.Closed
-        if (ref.child("members").child(uid).get().await().getValue(Boolean::class.java) == true) {
-            outcome = JoinRoomResult.AlreadyMember
+        val roomSnapshot = ref.get().await()
+        val room = roomSnapshot.getValue(Room::class.java) ?: return JoinRoomResult.NotFound
+        if (room.status == RoomStatus.Closed.value) return JoinRoomResult.Closed
+        if (room.isMember(uid)) {
+            updateJoinedMemberPresence(roomId, uid, room)
+            return JoinRoomResult.Success(roomId)
         }
+
+        val user = firebase.root.child("users").child(uid).get().await()
+        val now = System.currentTimeMillis()
+        val roomUser = RoomUser(
+            uid = uid,
+            role = "guest",
+            displayName = user.child("displayName").getValue(String::class.java),
+            photoUrl = user.child("photoUrl").getValue(String::class.java),
+            joinedAt = now,
+            online = true,
+            lastSeen = now,
+        )
+        var outcome: JoinRoomResult = JoinRoomResult.Error("입장에 실패했어요")
         val committed = suspendCancellableCoroutine<Boolean> { continuation ->
-            ref.child("guestUid").runTransaction(object : Transaction.Handler {
+            ref.runTransaction(object : Transaction.Handler {
                 override fun doTransaction(currentData: MutableData): Transaction.Result {
-                    if (outcome == JoinRoomResult.AlreadyMember) {
+                    val currentRoom = currentData.getValue(Room::class.java) ?: run {
+                        outcome = JoinRoomResult.NotFound
+                        return Transaction.abort()
+                    }
+                    if (currentRoom.status == RoomStatus.Closed.value) {
+                        outcome = JoinRoomResult.Closed
+                        return Transaction.abort()
+                    }
+                    if (currentRoom.isMember(uid)) {
+                        val memberIds = currentRoom.activeMemberIds() + uid
+                        currentData.child("members").child(uid).value = true
+                        currentData.child("activeUserCount").value = memberIds.size.coerceAtMost(2)
+                        currentData.child("status").value = if (memberIds.size >= 2) RoomStatus.Active.value else RoomStatus.Waiting.value
+                        currentData.child("users").child(uid).value = roomUser.copy(
+                            role = if (currentRoom.hostUid == uid) "host" else "guest",
+                            joinedAt = now,
+                        )
+                        currentData.child("updatedAt").value = now
                         outcome = JoinRoomResult.AlreadyMember
                         return Transaction.success(currentData)
                     }
-                    val currentGuestUid = currentData.getValue(String::class.java)
-                    if (currentGuestUid == uid) {
-                        outcome = JoinRoomResult.AlreadyMember
-                        return Transaction.success(currentData)
-                    }
-                    if (!currentGuestUid.isNullOrBlank()) {
+                    val memberIds = currentRoom.activeMemberIds()
+                    if (!currentRoom.guestUid.isNullOrBlank() || memberIds.size >= 2) {
                         outcome = JoinRoomResult.Full
                         return Transaction.abort()
                     }
-                    currentData.value = uid
+                    currentData.child("guestUid").value = uid
+                    currentData.child("members").child(currentRoom.hostUid).value = true
+                    currentData.child("members").child(uid).value = true
+                    currentData.child("activeUserCount").value = 2
+                    currentData.child("status").value = RoomStatus.Active.value
+                    currentData.child("updatedAt").value = now
+                    currentData.child("users").child(uid).value = roomUser
                     outcome = JoinRoomResult.Success(roomId)
                     return Transaction.success(currentData)
                 }
@@ -119,33 +152,9 @@ class RoomRepository(private val firebase: FirebaseProvider) {
                 }
             })
         }
-        if (!committed && outcome is JoinRoomResult.Error) return outcome
+        if (!committed) return outcome
         if (outcome is JoinRoomResult.Success || outcome is JoinRoomResult.AlreadyMember) {
-            val now = System.currentTimeMillis()
-            val user = firebase.root.child("users").child(uid).get().await()
-            val existingRoomUser = ref.child("users").child(uid).get().await().getValue(RoomUser::class.java)
-            val room = ref.get().await().getValue(Room::class.java)
-            val memberCount = room?.members.orEmpty().filterValues { it }.keys.plus(uid).toSet().size
-            val roomUser = RoomUser(
-                uid = uid,
-                role = existingRoomUser?.role?.takeIf { it == "host" || it == "guest" }
-                    ?: if (room?.hostUid == uid) "host" else "guest",
-                displayName = user.child("displayName").getValue(String::class.java) ?: existingRoomUser?.displayName,
-                photoUrl = user.child("photoUrl").getValue(String::class.java) ?: existingRoomUser?.photoUrl,
-                joinedAt = existingRoomUser?.joinedAt?.takeIf { it > 0L } ?: now,
-                online = true,
-                lastSeen = now,
-            )
-            firebase.root.updateChildren(
-                mapOf(
-                    "rooms/$roomId/members/$uid" to true,
-                    "rooms/$roomId/status" to if (memberCount >= 2) RoomStatus.Active.value else RoomStatus.Waiting.value,
-                    "rooms/$roomId/activeUserCount" to memberCount,
-                    "rooms/$roomId/updatedAt" to now,
-                    "rooms/$roomId/users/$uid" to roomUser,
-                    "userRooms/$uid/$roomId" to true,
-                )
-            ).await()
+            firebase.root.child("userRooms").child(uid).child(roomId).setValue(true).await()
             return JoinRoomResult.Success(roomId)
         }
         return outcome
@@ -396,6 +405,38 @@ class RoomRepository(private val firebase: FirebaseProvider) {
 
     private fun Room.isMember(uid: String): Boolean =
         members[uid] == true || hostUid == uid || guestUid == uid
+
+    private fun Room.activeMemberIds(): Set<String> =
+        members.filterValues { it }.keys
+            .plus(listOfNotNull(hostUid.takeIf { it.isNotBlank() }, guestUid?.takeIf { it.isNotBlank() }))
+            .toSet()
+
+    private suspend fun updateJoinedMemberPresence(roomId: String, uid: String, room: Room) {
+        val now = System.currentTimeMillis()
+        val user = firebase.root.child("users").child(uid).get().await()
+        val existingRoomUser = firebase.root.child("rooms").child(roomId).child("users").child(uid).get().await().getValue(RoomUser::class.java)
+        val memberIds = room.activeMemberIds() + uid
+        val roomUser = RoomUser(
+            uid = uid,
+            role = existingRoomUser?.role?.takeIf { it == "host" || it == "guest" }
+                ?: if (room.hostUid == uid) "host" else "guest",
+            displayName = user.child("displayName").getValue(String::class.java) ?: existingRoomUser?.displayName,
+            photoUrl = user.child("photoUrl").getValue(String::class.java) ?: existingRoomUser?.photoUrl,
+            joinedAt = existingRoomUser?.joinedAt?.takeIf { it > 0L } ?: now,
+            online = true,
+            lastSeen = now,
+        )
+        firebase.root.updateChildren(
+            mapOf(
+                "rooms/$roomId/members/$uid" to true,
+                "rooms/$roomId/status" to if (memberIds.size >= 2) RoomStatus.Active.value else RoomStatus.Waiting.value,
+                "rooms/$roomId/activeUserCount" to memberIds.size.coerceAtMost(2),
+                "rooms/$roomId/updatedAt" to now,
+                "rooms/$roomId/users/$uid" to roomUser,
+                "userRooms/$uid/$roomId" to true,
+            ),
+        ).await()
+    }
 
     private fun Room.toFirebaseMap(users: Map<String, RoomUser>): Map<String, Any?> =
         mapOf(

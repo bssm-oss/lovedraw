@@ -82,7 +82,7 @@ private fun DrawingWidgetCard(context: Context, snapshot: WidgetSnapshot, bitmap
         WidgetCard(
             context = context,
             title = "최근 낙서",
-            body = snapshot.latestDrawingUrl?.let { "낙서 있음" } ?: "낙서 없음",
+            body = snapshot.latestDrawingText,
             privacyMode = snapshot.privacyMode,
             roomId = snapshot.roomId,
             targetTab = WidgetTab.Drawing,

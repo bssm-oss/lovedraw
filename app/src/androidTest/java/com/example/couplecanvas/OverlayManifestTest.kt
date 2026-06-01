@@ -45,7 +45,7 @@ class OverlayManifestTest {
                 ComponentName(context, CoupleOverlayService::class.java),
             )
             assertEquals(
-                "User-enabled floating Couple Canvas card shown over other apps for quick access to recent couple records and drawing room status.",
+                "User-enabled Couple Canvas drawing overlay shown over other apps so the user can draw directly on the screen and sync strokes with their selected room.",
                 property.string,
             )
         }

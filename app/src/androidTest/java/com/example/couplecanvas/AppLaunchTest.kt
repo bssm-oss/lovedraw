@@ -14,14 +14,16 @@ class AppLaunchTest {
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun loginScreenIsVisible() {
-        composeRule.onNodeWithText("Couple Canvas").assertIsDisplayed()
+    fun appEntrySurfaceIsVisible() {
+        composeRule.waitUntil(timeoutMillis = 8_000) {
+            hasText("lovedraw") || hasText("먼저 권한을 설정해요") || hasText("방 만들기")
+        }
     }
 
     @Test
     fun entryScreenIsReadyForOAuthOrExistingSession() {
         composeRule.waitUntil(timeoutMillis = 8_000) {
-            hasText("Google로 시작하기") || hasText("방 만들기")
+            hasText("Google로 시작하기") || hasText("권한 설정하기") || hasText("방 만들기")
         }
 
         if (hasText("Google로 시작하기")) {
@@ -32,6 +34,12 @@ class AppLaunchTest {
             composeRule
                 .onAllNodesWithText("Firebase Console에서 Google 로그인 제공업체를 켜고 최신 google-services.json을 넣으면 실제 로그인이 동작합니다.")
                 .assertCountEquals(0)
+        } else if (hasText("권한 설정하기")) {
+            composeRule.onNodeWithText("권한 설정하기")
+                .assertIsDisplayed()
+                .assertIsEnabled()
+            composeRule.onNodeWithText("화면 위 그리기")
+                .assertIsDisplayed()
         } else {
             composeRule.onNodeWithText("방 만들기")
                 .assertIsDisplayed()

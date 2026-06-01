@@ -37,6 +37,7 @@ class WidgetStateStore(private val context: Context) {
         val memoryLocalPath = stringPreferencesKey("memory_local_path")
         val drawing = stringPreferencesKey("drawing")
         val drawingLocalPath = stringPreferencesKey("drawing_local_path")
+        val drawingText = stringPreferencesKey("drawing_text")
         val stats = stringPreferencesKey("stats")
         val distance = stringPreferencesKey("distance")
         val updatedAt = longPreferencesKey("updated_at")
@@ -57,6 +58,7 @@ class WidgetStateStore(private val context: Context) {
             latestMemoryLocalPath = prefs[Keys.memoryLocalPath],
             latestDrawingUrl = prefs[Keys.drawing],
             latestDrawingLocalPath = prefs[Keys.drawingLocalPath],
+            latestDrawingText = prefs[Keys.drawingText] ?: "낙서 없음",
             statsText = prefs[Keys.stats] ?: "아직 통계가 없어요",
             distanceText = prefs[Keys.distance] ?: "위치 공유가 꺼져 있어요",
             updatedAt = prefs[Keys.updatedAt] ?: 0L,
@@ -124,6 +126,7 @@ class WidgetStateStore(private val context: Context) {
             } else {
                 prefs[Keys.drawingLocalPath] = snapshot.latestDrawingLocalPath
             }
+            prefs[Keys.drawingText] = if (snapshot.privacyMode) "앱에서 낙서를 확인해요" else snapshot.latestDrawingText
             prefs[Keys.stats] = snapshot.statsText
             prefs[Keys.distance] = snapshot.distanceText
             prefs[Keys.updatedAt] = snapshot.updatedAt
@@ -165,6 +168,7 @@ class WidgetStateStore(private val context: Context) {
         roomId: String,
         latestDrawingUrl: String,
         latestDrawingLocalPath: String? = null,
+        latestDrawingText: String = "최근 낙서가 있어요",
         afterSave: suspend (Context) -> Unit = {},
     ) {
         context.widgetDataStore.edit { prefs ->
@@ -173,6 +177,8 @@ class WidgetStateStore(private val context: Context) {
             if (latestDrawingLocalPath != null) {
                 prefs[Keys.drawingLocalPath] = latestDrawingLocalPath
             }
+            val privacyMode = prefs[Keys.privacyMode] ?: false
+            prefs[Keys.drawingText] = if (privacyMode) "앱에서 낙서를 확인해요" else latestDrawingText
             prefs[Keys.updatedAt] = System.currentTimeMillis()
         }
         afterSave(context)

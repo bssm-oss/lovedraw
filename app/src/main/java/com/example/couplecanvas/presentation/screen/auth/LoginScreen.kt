@@ -19,7 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +36,7 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.NoCredentialException
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.couplecanvas.BuildConfig
 import com.example.couplecanvas.presentation.component.BrandIconTile
@@ -58,8 +58,8 @@ import java.security.SecureRandom
 fun LoginScreen(onSignedIn: () -> Unit) {
     val container = LocalAppContainer.current
     val viewModel: AuthViewModel = viewModel(factory = ViewModelFactory { AuthViewModel(container.authRepository) })
-    val user by viewModel.user.collectAsState()
-    val uiState by viewModel.uiState.collectAsState()
+    val user by viewModel.user.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val resources = LocalResources.current
     val webClientId = remember(resources, context.packageName) {

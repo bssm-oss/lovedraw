@@ -131,14 +131,13 @@ class FeatureRepository(private val firebase: FirebaseProvider) {
         require(uid in memberIds) { "이 방에 참여한 사용자만 투표할 수 있어요" }
 
         val planRef = firebase.root.child("rooms").child(roomId).child("datePlans").child(planId)
-        val initialPlanValue = planRef.get().await().value ?: throw FeatureRepositoryException("데이트 플랜을 찾지 못했어요")
+        planRef.get().await().value ?: throw FeatureRepositoryException("데이트 플랜을 찾지 못했어요")
         val now = System.currentTimeMillis()
         var failure: Throwable? = null
         val committed = suspendCancellableCoroutine<Boolean> { continuation ->
             planRef.runTransaction(object : Transaction.Handler {
                 override fun doTransaction(currentData: MutableData): Transaction.Result {
-                    val rawValue = currentData.value ?: initialPlanValue
-                    val raw = rawValue as? Map<*, *> ?: run {
+                    val raw = currentData.value as? Map<*, *> ?: run {
                         failure = FeatureRepositoryException("데이트 플랜을 찾지 못했어요")
                         return Transaction.abort()
                     }
@@ -295,18 +294,58 @@ class FeatureRepository(private val firebase: FirebaseProvider) {
 
     suspend fun addMemoryImages(roomId: String, uid: String, memory: MemoryItem, imageUris: List<Uri>): MemoryItem {
         require(imageUris.isNotEmpty()) { "추가할 사진을 선택해주세요" }
-        val remainingSlots = MAX_MEMORY_IMAGES - memory.imageUrls.size
-        require(remainingSlots > 0) { "사진은 최대 ${MAX_MEMORY_IMAGES}장까지 저장할 수 있어요" }
-        val uploads = imageUris.take(remainingSlots).map { uri ->
+        val optimisticRemainingSlots = MAX_MEMORY_IMAGES - memory.imageUrls.size
+        require(optimisticRemainingSlots > 0) { "사진은 최대 ${MAX_MEMORY_IMAGES}장까지 저장할 수 있어요" }
+        val uploads = imageUris.take(MAX_MEMORY_IMAGES).map { uri ->
             uploadImage(memoryImageUploadPath(roomId, uid, memory.memoryId), uri)
         }
-        val updatedMemory = memory.copy(
-            imageUrls = memory.imageUrls + uploads.map { it.second },
-            storagePaths = memory.storagePaths + uploads.map { it.first },
-            updatedAt = System.currentTimeMillis(),
-        )
-        saveUpdatedMemory(roomId, updatedMemory)
-        return updatedMemory
+        val memoryRef = firebase.root.child("rooms").child(roomId).child("memories").child(memory.memoryId)
+        val now = System.currentTimeMillis()
+        var failure: Throwable? = null
+        var updatedMemory: MemoryItem? = null
+        val committed = suspendCancellableCoroutine<Boolean> { continuation ->
+            memoryRef.runTransaction(object : Transaction.Handler {
+                override fun doTransaction(currentData: MutableData): Transaction.Result {
+                    val currentMemory = currentData.getValue(MemoryItem::class.java) ?: run {
+                        failure = FeatureRepositoryException("추억을 찾지 못했어요")
+                        return Transaction.abort()
+                    }
+                    val remainingSlots = MAX_MEMORY_IMAGES - currentMemory.imageUrls.size
+                    if (remainingSlots <= 0) {
+                        failure = FeatureRepositoryException("사진은 최대 ${MAX_MEMORY_IMAGES}장까지 저장할 수 있어요")
+                        return Transaction.abort()
+                    }
+                    val selectedUploads = uploads.take(remainingSlots)
+                    currentData.value = currentMemory.copy(
+                        imageUrls = currentMemory.imageUrls + selectedUploads.map { it.second },
+                        storagePaths = currentMemory.storagePaths + selectedUploads.map { it.first },
+                        updatedAt = now,
+                    )
+                    return Transaction.success(currentData)
+                }
+
+                override fun onComplete(
+                    error: com.google.firebase.database.DatabaseError?,
+                    committed: Boolean,
+                    snapshot: com.google.firebase.database.DataSnapshot?,
+                ) {
+                    if (error != null) failure = FeatureRepositoryException("사진 추가에 실패했어요", error.toException())
+                    updatedMemory = snapshot?.getValue(MemoryItem::class.java)
+                    continuation.resume(committed)
+                }
+            })
+        }
+        val retainedStoragePaths = updatedMemory?.storagePaths.orEmpty().toSet()
+        uploads
+            .map { it.first }
+            .filterNot { it in retainedStoragePaths }
+            .forEach { path -> runCatching { firebase.storage.reference.child(path).delete().await() } }
+        val committedMemory = updatedMemory
+        if (!committed || committedMemory == null) {
+            throw failure ?: FeatureRepositoryException("사진 추가에 실패했어요")
+        }
+        firebase.root.child("rooms").child(roomId).child("updatedAt").setValue(committedMemory.updatedAt).await()
+        return committedMemory
     }
 
     suspend fun removeMemoryImage(roomId: String, memory: MemoryItem, imageIndex: Int): MemoryItem {
@@ -389,15 +428,32 @@ class FeatureRepository(private val firebase: FirebaseProvider) {
 
     suspend fun ensureDailySpark(roomId: String, dateKey: String): DailySpark {
         val ref = firebase.root.child("rooms").child(roomId).child("dailySparks").child(dateKey)
-        val existing = ref.get().await().getValue(DailySpark::class.java)
-        if (existing != null) return existing
         val spark = DailySpark(
             sparkId = dateKey,
             question = QuizBank.dailySparkQuestion(dateKey),
             dateKey = dateKey,
         )
-        ref.setValue(spark).await()
-        return spark
+        var failure: Throwable? = null
+        val committed = suspendCancellableCoroutine<Boolean> { continuation ->
+            ref.runTransaction(object : Transaction.Handler {
+                override fun doTransaction(currentData: MutableData): Transaction.Result {
+                    if (currentData.value != null) return Transaction.success(currentData)
+                    currentData.value = spark
+                    return Transaction.success(currentData)
+                }
+
+                override fun onComplete(
+                    error: com.google.firebase.database.DatabaseError?,
+                    committed: Boolean,
+                    snapshot: com.google.firebase.database.DataSnapshot?,
+                ) {
+                    if (error != null) failure = FeatureRepositoryException("Daily Spark 생성에 실패했어요", error.toException())
+                    continuation.resume(committed)
+                }
+            })
+        }
+        if (!committed) throw failure ?: FeatureRepositoryException("Daily Spark 생성에 실패했어요")
+        return ref.get().await().getValue(DailySpark::class.java) ?: spark
     }
 
     suspend fun answerDailySpark(roomId: String, dateKey: String, uid: String, answer: String) {

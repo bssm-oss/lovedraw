@@ -37,7 +37,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +50,7 @@ import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.couplecanvas.data.model.RoomHomeSummary
@@ -79,8 +79,12 @@ import java.time.temporal.ChronoUnit
 @Composable
 fun HomeScreen(onOpenRoom: (String) -> Unit, onWaitRoom: (String) -> Unit, onSignedOut: () -> Unit) {
     val container = LocalAppContainer.current
-    val viewModel: HomeViewModel = viewModel(factory = ViewModelFactory { HomeViewModel(container.authRepository, container.roomRepository) })
-    val uiState by viewModel.uiState.collectAsState()
+    val viewModel: HomeViewModel = viewModel(
+        factory = ViewModelFactory {
+            HomeViewModel(container.authRepository, container.roomRepository, container.widgetStateStore)
+        },
+    )
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
     var showJoinDialog by remember { mutableStateOf(false) }
     var pendingLeaveSummary by remember { mutableStateOf<RoomHomeSummary?>(null) }
@@ -88,7 +92,7 @@ fun HomeScreen(onOpenRoom: (String) -> Unit, onWaitRoom: (String) -> Unit, onSig
     val credentialManager = remember(context) { CredentialManager.create(context) }
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val overlayEnabled by container.overlayStateStore.enabled.collectAsState(initial = false)
+    val overlayEnabled by container.overlayStateStore.enabled.collectAsStateWithLifecycle(initialValue = false)
     var hasOverlayPermission by remember { mutableStateOf(OverlayPermission.canDrawOverlays(context)) }
     var hasNotificationPermission by remember { mutableStateOf(context.hasOverlayNotificationPermission()) }
     var pendingOverlayStart by remember { mutableStateOf(false) }
@@ -137,6 +141,7 @@ fun HomeScreen(onOpenRoom: (String) -> Unit, onWaitRoom: (String) -> Unit, onSig
                     context = context,
                     roomId = summary.room.roomId,
                     roomTitle = summary.room.title,
+                    startDrawing = true,
                 ),
             )
         }
@@ -231,6 +236,23 @@ fun HomeScreen(onOpenRoom: (String) -> Unit, onWaitRoom: (String) -> Unit, onSig
                         "코드 입장",
                         onClick = { showJoinDialog = true },
                         modifier = Modifier.weight(1f),
+                        enabled = !uiState.isBusy,
+                    )
+                }
+            }
+            if (overlaySummary != null) {
+                item {
+                    SecondaryPastelButton(
+                        if (overlayEnabled) "화면 그리기 끄기" else "화면 그리기 켜기",
+                        onClick = {
+                            if (overlayEnabled) {
+                                context.stopOverlayService()
+                                coroutineScope.launch { container.overlayStateStore.setEnabled(false) }
+                            } else {
+                                startOverlay(overlaySummary)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
                         enabled = !uiState.isBusy,
                     )
                 }

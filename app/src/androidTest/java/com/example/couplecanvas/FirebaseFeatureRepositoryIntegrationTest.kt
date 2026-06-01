@@ -299,6 +299,50 @@ class FirebaseFeatureRepositoryIntegrationTest {
     }
 
     @Test
+    fun concurrentJoinRoomKeepsRoomAtTwoMembers() {
+        runBlocking {
+            assumeTrue(BuildConfig.USE_FIREBASE_EMULATORS)
+
+            withTimeout(20_000) {
+                val firebase = FirebaseProvider()
+                firebase.auth.signOut()
+                val roomRepository = RoomRepository(firebase)
+
+                val hostUid = "host-${UUID.randomUUID()}"
+                val firstGuestUid = "guest-${UUID.randomUUID()}"
+                val secondGuestUid = "guest-${UUID.randomUUID()}"
+                val roomId = roomRepository.createRoom(hostUid, title = "동시 입장 테스트 방")
+                val roomCode = requireNotNull(
+                    firebase.root.child("rooms").child(roomId).child("roomCode").get().await().getValue(String::class.java),
+                )
+
+                val firstJoin = async { roomRepository.joinRoom(roomCode, firstGuestUid) }
+                val secondJoin = async { roomRepository.joinRoom(roomCode, secondGuestUid) }
+                val results = listOf(firstJoin.await(), secondJoin.await())
+                val success = results.single { it is JoinRoomResult.Success } as JoinRoomResult.Success
+                assertEquals(roomId, success.roomId)
+                assertEquals(1, results.count { it is JoinRoomResult.Full })
+
+                val room = requireNotNull(firebase.root.child("rooms").child(roomId).get().await().getValue(Room::class.java))
+                val activeMembers = room.members.filterValues { it }.keys
+                assertEquals(2, activeMembers.size)
+                assertEquals(2, room.activeUserCount)
+                assertTrue(room.guestUid in setOf(firstGuestUid, secondGuestUid))
+                assertTrue(activeMembers.contains(hostUid))
+                assertTrue(activeMembers.contains(room.guestUid))
+                val rejectedGuestUid = setOf(firstGuestUid, secondGuestUid).single { it != room.guestUid }
+                assertFalse(firebase.root.child("userRooms").child(rejectedGuestUid).child(roomId).get().await().exists())
+
+                firebase.root.child("rooms").child(roomId).removeValue().await()
+                firebase.root.child("roomCodes").child(roomCode).removeValue().await()
+                firebase.root.child("userRooms").child(hostUid).removeValue().await()
+                firebase.root.child("userRooms").child(firstGuestUid).removeValue().await()
+                firebase.root.child("userRooms").child(secondGuestUid).removeValue().await()
+            }
+        }
+    }
+
+    @Test
     fun closesAndReopensRoomWhileKeepingRoomScopedHistory() {
         runBlocking {
             assumeTrue(BuildConfig.USE_FIREBASE_EMULATORS)
@@ -880,6 +924,64 @@ class FirebaseFeatureRepositoryIntegrationTest {
                 firebase.root.child("rooms").child(roomId).removeValue().await()
                 firebase.root.child("roomCodes").child(roomCode).removeValue().await()
                 firebase.root.child("userRooms").child(hostUid).removeValue().await()
+                firebase.auth.signOut()
+            }
+        }
+    }
+
+    @Test
+    fun concurrentMemoryImageAddsNeverStoreMoreThanFourImages() {
+        runBlocking {
+            assumeTrue(BuildConfig.USE_FIREBASE_EMULATORS)
+
+            withTimeout(40_000) {
+                val firebase = FirebaseProvider()
+                firebase.auth.signOut()
+                val authResult = firebase.auth.signInAnonymously().await()
+                val hostUid = requireNotNull(authResult.user?.uid)
+                val roomRepository = RoomRepository(firebase)
+                val featureRepository = FeatureRepository(firebase)
+                val uploadFiles = (0 until 8).map { index ->
+                    createTempUploadFile("memory-concurrent-$index-${UUID.randomUUID()}.jpg")
+                }
+
+                val roomId = roomRepository.createRoom(hostUid, title = "동시 사진 추가 테스트 방")
+                val roomCode = requireNotNull(
+                    firebase.root.child("rooms").child(roomId).child("roomCode").get().await().getValue(String::class.java),
+                )
+                val memory = featureRepository.saveMemory(
+                    roomId = roomId,
+                    uid = hostUid,
+                    title = "사진 최대 개수 테스트",
+                    note = null,
+                    date = 1_800_000_000_000L,
+                    imageUris = emptyList(),
+                )
+
+                val firstBatch = uploadFiles.take(4).map { Uri.fromFile(it) }
+                val secondBatch = uploadFiles.drop(4).map { Uri.fromFile(it) }
+                val firstAdd = async { runCatching { featureRepository.addMemoryImages(roomId, hostUid, memory, firstBatch) } }
+                val secondAdd = async { runCatching { featureRepository.addMemoryImages(roomId, hostUid, memory, secondBatch) } }
+                val outcomes = listOf(firstAdd.await(), secondAdd.await())
+                val successfulMemories = outcomes.mapNotNull { it.getOrNull() }
+                assertTrue(outcomes.any { it.isSuccess })
+                val stored = requireNotNull(successfulMemories.maxByOrNull { it.imageUrls.size })
+
+                successfulMemories.forEach { updatedMemory ->
+                    assertTrue(updatedMemory.imageUrls.size <= 4)
+                    assertEquals(updatedMemory.imageUrls.size, updatedMemory.storagePaths.size)
+                }
+                assertTrue(stored.imageUrls.size <= 4)
+                assertEquals(stored.imageUrls.size, stored.storagePaths.size)
+                stored.storagePaths.forEach { path ->
+                    assertEquals(1, firebase.storage.reference.child(path).getBytes(1024).await().size)
+                }
+
+                stored.storagePaths.forEach { path -> runCatching { firebase.storage.reference.child(path).delete().await() } }
+                uploadFiles.forEach { it.delete() }
+                runCatching { firebase.root.child("rooms").child(roomId).removeValue().await() }
+                runCatching { firebase.root.child("roomCodes").child(roomCode).removeValue().await() }
+                runCatching { firebase.root.child("userRooms").child(hostUid).removeValue().await() }
                 firebase.auth.signOut()
             }
         }

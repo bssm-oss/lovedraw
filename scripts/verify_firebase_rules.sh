@@ -51,8 +51,8 @@ expect_code() {
 IFS=$'\t' read -r HOST_UID HOST_TOKEN < <(create_auth_user)
 IFS=$'\t' read -r GUEST_UID GUEST_TOKEN < <(create_auth_user)
 IFS=$'\t' read -r OUTSIDER_UID OUTSIDER_TOKEN < <(create_auth_user)
-ROOM_ID="rules-room-001"
-ROOM_CODE="ABCD23"
+ROOM_ID="rules-room-$(date +%s)-$RANDOM"
+ROOM_CODE="ABCD$(printf '%02d' $((RANDOM % 8 + 22)))"
 NOW=1800000000000
 
 expect_code 200 PUT "/users/$HOST_UID" "$HOST_TOKEN" "{\"uid\":\"$HOST_UID\",\"displayName\":\"Host\",\"createdAt\":1800000000000,\"lastSeen\":1800000000000}"
@@ -137,6 +137,7 @@ JSON
 expect_code 200 PUT "/rooms/$ROOM_ID/notes/note-1" "$HOST_TOKEN" "$NOTE_PAYLOAD"
 expect_code 401 PUT "/rooms/$ROOM_ID/notes/note-2" "$OUTSIDER_TOKEN" "$NOTE_PAYLOAD"
 expect_code 401 PUT "/rooms/$ROOM_ID/adminOverride" "$HOST_TOKEN" '"not allowed"'
+expect_code 401 DELETE "/rooms/$ROOM_ID/notes/note-1" "$GUEST_TOKEN"
 
 SPOOFED_NOTE_PAYLOAD="$(cat <<JSON
 {
@@ -191,6 +192,7 @@ JSON
 SPOOFED_DATE_PAYLOAD="$(echo "$HOST_DATE_PAYLOAD" | jq --arg uid "$GUEST_UID" '.planId = "date-2" | .createdByUid = $uid')"
 expect_code 200 PUT "/rooms/$ROOM_ID/datePlans/date-1" "$HOST_TOKEN" "$HOST_DATE_PAYLOAD"
 expect_code 401 PUT "/rooms/$ROOM_ID/datePlans/date-2" "$HOST_TOKEN" "$SPOOFED_DATE_PAYLOAD"
+expect_code 401 DELETE "/rooms/$ROOM_ID/datePlans/date-1" "$GUEST_TOKEN"
 
 HOST_MEMORY_PAYLOAD="$(cat <<JSON
 {
@@ -206,6 +208,25 @@ JSON
 SPOOFED_MEMORY_PAYLOAD="$(echo "$HOST_MEMORY_PAYLOAD" | jq --arg uid "$GUEST_UID" '.memoryId = "memory-2" | .createdByUid = $uid')"
 expect_code 200 PUT "/rooms/$ROOM_ID/memories/memory-1" "$HOST_TOKEN" "$HOST_MEMORY_PAYLOAD"
 expect_code 401 PUT "/rooms/$ROOM_ID/memories/memory-2" "$HOST_TOKEN" "$SPOOFED_MEMORY_PAYLOAD"
+expect_code 401 DELETE "/rooms/$ROOM_ID/memories/memory-1" "$GUEST_TOKEN"
+UPDATED_MEMORY_PAYLOAD="$(echo "$HOST_MEMORY_PAYLOAD" | jq --arg path "rooms/$ROOM_ID/uploads/$HOST_UID/memories/memory-1/1.jpg" '.imageUrls = ["https://example.invalid/1.jpg"] | .storagePaths = [$path] | .updatedAt = 1800000000003')"
+expect_code 200 PUT "/rooms/$ROOM_ID/memories/memory-1" "$HOST_TOKEN" "$UPDATED_MEMORY_PAYLOAD"
+
+HOST_BUCKET_PAYLOAD="$(cat <<JSON
+{
+  "itemId": "bucket-1",
+  "title": "규칙 테스트 버킷",
+  "status": "wish",
+  "createdByUid": "$HOST_UID",
+  "createdAt": $((NOW + 2)),
+  "updatedAt": $((NOW + 2))
+}
+JSON
+)"
+SPOOFED_BUCKET_PAYLOAD="$(echo "$HOST_BUCKET_PAYLOAD" | jq --arg uid "$GUEST_UID" '.itemId = "bucket-2" | .createdByUid = $uid')"
+expect_code 200 PUT "/rooms/$ROOM_ID/bucketList/bucket-1" "$HOST_TOKEN" "$HOST_BUCKET_PAYLOAD"
+expect_code 401 PUT "/rooms/$ROOM_ID/bucketList/bucket-2" "$HOST_TOKEN" "$SPOOFED_BUCKET_PAYLOAD"
+expect_code 401 DELETE "/rooms/$ROOM_ID/bucketList/bucket-1" "$GUEST_TOKEN"
 
 HOST_QUIZ_PAYLOAD="$(cat <<JSON
 {
@@ -235,6 +256,21 @@ JSON
 SPOOFED_LOCATION_PAYLOAD="$(echo "$HOST_LOCATION_PAYLOAD" | jq --arg uid "$GUEST_UID" '.uid = $uid')"
 expect_code 200 PUT "/rooms/$ROOM_ID/locationShares/$HOST_UID" "$HOST_TOKEN" "$HOST_LOCATION_PAYLOAD"
 expect_code 401 PUT "/rooms/$ROOM_ID/locationShares/$GUEST_UID" "$HOST_TOKEN" "$SPOOFED_LOCATION_PAYLOAD"
+HOST_LOCATION_WITH_COORDS="$(echo "$HOST_LOCATION_PAYLOAD" | jq '.latitude = 37.5665 | .longitude = 126.9780 | .accuracyMeters = 24 | .isApproximateOnly = false | .consentedUids["'"$GUEST_UID"'"] = true')"
+GUEST_LOCATION_CONSENT="$(cat <<JSON
+{
+  "uid": "$GUEST_UID",
+  "enabled": true,
+  "consentedUids": {
+    "$GUEST_UID": true
+  },
+  "isApproximateOnly": true
+}
+JSON
+)"
+expect_code 401 PUT "/rooms/$ROOM_ID/locationShares/$HOST_UID" "$HOST_TOKEN" "$HOST_LOCATION_WITH_COORDS"
+expect_code 200 PUT "/rooms/$ROOM_ID/locationShares/$GUEST_UID" "$GUEST_TOKEN" "$GUEST_LOCATION_CONSENT"
+expect_code 200 PUT "/rooms/$ROOM_ID/locationShares/$HOST_UID" "$HOST_TOKEN" "$HOST_LOCATION_WITH_COORDS"
 
 FULL_JOIN_PAYLOAD="$(cat <<JSON
 {
