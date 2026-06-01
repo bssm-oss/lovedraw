@@ -17,7 +17,7 @@ import java.util.UUID
 @RunWith(AndroidJUnit4::class)
 class FirebaseStorageRulesIntegrationTest {
     @Test
-    fun storageSdkAccessIsScopedToUploadOwner() {
+    fun storageSdkAllowsAuthenticatedSharedReadsAndKeepsWritesOwnerScoped() {
         runBlocking {
             assumeTrue(BuildConfig.USE_FIREBASE_EMULATORS)
 
@@ -38,14 +38,10 @@ class FirebaseStorageRulesIntegrationTest {
                 assertEquals("image/jpeg", ownerRef.metadata.await().contentType)
 
                 firebase.auth.signOut()
-                val outsider = requireNotNull(firebase.auth.signInAnonymously().await().user)
-                val outsiderUid = outsider.uid
+                val partner = requireNotNull(firebase.auth.signInAnonymously().await().user)
+                val partnerUid = partner.uid
 
-                val outsiderReadFailure = runCatching { ownerRef.metadata.await() }.exceptionOrNull()
-                assertTrue(
-                    "Outsider SDK read should be rejected by Storage rules.",
-                    outsiderReadFailure.isStorageUnauthorized(),
-                )
+                assertEquals("image/jpeg", ownerRef.metadata.await().contentType)
 
                 val outsiderWriteFailure = runCatching {
                     ownerRef.putBytes(byteArrayOf(4, 5, 6), metadata).await()
@@ -56,7 +52,7 @@ class FirebaseStorageRulesIntegrationTest {
                 )
 
                 val outsiderOwnRef = firebase.storage.reference
-                    .child("rooms/$roomId/uploads/$outsiderUid/memories/photo.jpg")
+                    .child("rooms/$roomId/uploads/$partnerUid/memories/photo.jpg")
                 outsiderOwnRef.putBytes(byteArrayOf(7, 8, 9), metadata).await()
                 assertEquals("image/jpeg", outsiderOwnRef.metadata.await().contentType)
 

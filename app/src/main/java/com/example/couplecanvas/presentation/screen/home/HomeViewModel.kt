@@ -2,15 +2,20 @@ package com.example.couplecanvas.presentation.screen.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.couplecanvas.data.local.WidgetStateStore
 import com.example.couplecanvas.data.model.JoinRoomResult
 import com.example.couplecanvas.data.model.Room
 import com.example.couplecanvas.data.model.RoomHomeSummary
+import com.example.couplecanvas.data.model.RoomStatus
 import com.example.couplecanvas.data.repository.AuthRepository
 import com.example.couplecanvas.data.repository.RoomRepository
+import com.example.couplecanvas.feature.widgets.updateCoupleWidgets
 import com.example.couplecanvas.util.RoomCodeGenerator
-import kotlinx.coroutines.Job
+import com.example.couplecanvas.util.WidgetSnapshotFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class HomeUiState(
@@ -29,14 +34,14 @@ data class HomeUiState(
 class HomeViewModel(
     private val authRepository: AuthRepository,
     private val roomRepository: RoomRepository,
+    private val widgetStateStore: WidgetStateStore,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState
-    private var roomsJob: Job? = null
 
     init {
         observeConnection()
-        observeRooms()
+        observeUserRooms()
     }
 
     private fun observeConnection() {
@@ -47,20 +52,45 @@ class HomeViewModel(
         }
     }
 
-    private fun observeRooms() {
-        val uid = authRepository.currentUser?.uid ?: return
-        val user = authRepository.currentUser
-        _uiState.value = _uiState.value.copy(displayName = user?.displayName ?: user?.email ?: "Google 계정")
-        roomsJob?.cancel()
-        roomsJob = viewModelScope.launch {
-            roomRepository.observeRoomSummariesForUser(uid).collect { summaries ->
+    private fun observeUserRooms() {
+        viewModelScope.launch {
+            authRepository.observeUser().collectLatest { user ->
+                if (user == null) {
+                    _uiState.value = _uiState.value.copy(
+                        rooms = emptyList(),
+                        roomSummaries = emptyList(),
+                        displayName = "Google 계정",
+                        isLoading = false,
+                    )
+                    return@collectLatest
+                }
+
                 _uiState.value = _uiState.value.copy(
-                    rooms = summaries.map { it.room },
-                    roomSummaries = summaries,
-                    isLoading = false,
+                    displayName = user.displayName ?: user.email ?: "Google 계정",
+                    isLoading = true,
                 )
+                roomRepository.observeRoomSummariesForUser(user.uid).collect { summaries ->
+                    _uiState.value = _uiState.value.copy(
+                        rooms = summaries.map { it.room },
+                        roomSummaries = summaries,
+                        isLoading = false,
+                    )
+                    updateHomeWidgetSnapshot(summaries)
+                }
             }
         }
+    }
+
+    private suspend fun updateHomeWidgetSnapshot(summaries: List<RoomHomeSummary>) {
+        val current = widgetStateStore.snapshot.first()
+        val selectedSummary = summaries.firstOrNull { it.room.roomId == current.roomId }
+            ?: summaries.firstOrNull { it.room.status != RoomStatus.Closed.value }
+            ?: summaries.firstOrNull()
+            ?: return
+        widgetStateStore.save(
+            WidgetSnapshotFactory.fromHomeSummary(selectedSummary, current),
+            afterSave = ::updateCoupleWidgets,
+        )
     }
 
     fun createRoom(title: String = "둘만의 그림방") {

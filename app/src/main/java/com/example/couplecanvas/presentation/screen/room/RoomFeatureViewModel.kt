@@ -28,7 +28,10 @@ import com.example.couplecanvas.util.DateIdeaGenerator
 import com.example.couplecanvas.util.DistanceCalculator
 import com.example.couplecanvas.util.QuizBank
 import com.example.couplecanvas.util.StatsCalculator
+import com.example.couplecanvas.util.WidgetSnapshotFactory
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -67,6 +70,7 @@ class RoomFeatureViewModel(
     private val _uiState = MutableStateFlow(RoomFeatureUiState(localUid = authRepository.currentUser?.uid.orEmpty()))
     val uiState: StateFlow<RoomFeatureUiState> = _uiState
     private val dateKey = ModelFactory.dateKey()
+    private var widgetSnapshotJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -462,6 +466,23 @@ class RoomFeatureViewModel(
         force: Boolean,
     ) {
         if (!force && !widgetStateStore.shouldUpdateRoom(roomId)) return
+        if (!force) {
+            widgetSnapshotJob?.cancel()
+            widgetSnapshotJob = viewModelScope.launch {
+                delay(WIDGET_SNAPSHOT_DEBOUNCE_MS)
+                persistWidgetSnapshot(state, stats, distanceText)
+            }
+            return
+        }
+        widgetSnapshotJob?.cancel()
+        persistWidgetSnapshot(state, stats, distanceText)
+    }
+
+    private suspend fun persistWidgetSnapshot(
+        state: RoomFeatureUiState,
+        stats: CoupleStats,
+        distanceText: String,
+    ) {
         val latestMemory = state.memories.firstOrNull()
         val memberIds = state.room?.members?.filterValues { it }?.keys.orEmpty()
         val roomTitle = state.room?.title.orEmpty()
@@ -482,7 +503,7 @@ class RoomFeatureViewModel(
                 roomId = roomId,
                 roomTitle = roomTitle,
                 privacyMode = state.room?.privacyMode ?: false,
-                daysTogetherText = if (stats.daysTogether > 0) "D+${stats.daysTogether}" else "D-Day 없음",
+                daysTogetherText = WidgetSnapshotFactory.daysTogetherText(stats.daysTogether),
                 nextDateText = StatsCalculator.nextDateCountdownText(state.datePlans),
                 latestNoteText = state.notes.firstOrNull()?.message ?: "노트 없음",
                 dailySparkText = state.dailySpark.toWidgetSparkText(stats.currentSparkStreak, memberIds),
@@ -521,5 +542,9 @@ class RoomFeatureViewModel(
                 .onFailure { _uiState.value = _uiState.value.copy(error = it.message ?: "작업에 실패했어요") }
             _uiState.value = _uiState.value.copy(isBusy = false)
         }
+    }
+
+    companion object {
+        private const val WIDGET_SNAPSHOT_DEBOUNCE_MS = 400L
     }
 }

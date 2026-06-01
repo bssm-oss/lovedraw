@@ -2,8 +2,10 @@ package com.example.couplecanvas.data.model
 
 import com.google.firebase.database.IgnoreExtraProperties
 import com.google.firebase.database.PropertyName
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.util.UUID
 
 data class AppUser(
@@ -352,13 +354,17 @@ data class WidgetSnapshot(
     val latestMemoryLocalPath: String? = null,
     val latestDrawingUrl: String? = null,
     val latestDrawingLocalPath: String? = null,
+    val latestDrawingText: String = "낙서 없음",
     val statsText: String = "아직 통계가 없어요",
     val distanceText: String = "위치 공유가 꺼져 있어요",
     val updatedAt: Long = 0L,
 )
 
 object ModelFactory {
-    fun dateKey(now: LocalDate = LocalDate.now(ZoneId.systemDefault())): String =
+    fun dateKey(now: Instant = Instant.now(), zoneId: ZoneId = ZoneOffset.UTC): String =
+        now.atZone(zoneId).toLocalDate().toString()
+
+    fun dateKey(now: LocalDate): String =
         now.toString()
 
     fun dailySparkDiscussionId(dateKey: String): String =

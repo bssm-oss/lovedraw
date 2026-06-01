@@ -74,20 +74,24 @@ object ShareCardGenerator {
         val canvas = Canvas(bitmap)
         var y = 500f
         val photos = memory.imageUrls.take(4).mapNotNull { loadBitmap(context, it) }
-        if (photos.isNotEmpty()) {
-            drawPhotoCollage(canvas, photos, RectF(92f, y, 988f, y + 620f))
-            y += 700f
-        }
-        y = drawTitle(canvas, memory.title, 92f, y, 880f, 72f)
-        y += 24f
-        memory.note?.takeIf { it.isNotBlank() }?.let {
-            y = drawMultiline(canvas, it, 92f, y, 880, 40f, WARM_GRAY)
+        try {
+            if (photos.isNotEmpty()) {
+                drawPhotoCollage(canvas, photos, RectF(92f, y, 988f, y + 620f))
+                y += 700f
+            }
+            y = drawTitle(canvas, memory.title, 92f, y, 880f, 72f)
             y += 24f
+            memory.note?.takeIf { it.isNotBlank() }?.let {
+                y = drawMultiline(canvas, it, 92f, y, 880, 40f, WARM_GRAY)
+                y += 24f
+            }
+            drawPill(canvas, memory.date.toShareDate(), 92f, y)
+            drawPill(canvas, "사진 ${memory.imageUrls.size}장", 330f, y)
+            drawFooter(canvas, "우리의 추억을 Couple Canvas에 저장했어요")
+            return saveBitmap(context, bitmap, "memory-${memory.memoryId.ifBlank { UUID.randomUUID().toString() }}.png")
+        } finally {
+            photos.recycleAll()
         }
-        drawPill(canvas, memory.date.toShareDate(), 92f, y)
-        drawPill(canvas, "사진 ${memory.imageUrls.size}장", 330f, y)
-        drawFooter(canvas, "우리의 추억을 Couple Canvas에 저장했어요")
-        return saveBitmap(context, bitmap, "memory-${memory.memoryId.ifBlank { UUID.randomUUID().toString() }}.png")
     }
 
     fun createMemoryCollageUri(context: Context, memory: MemoryItem): Uri {
@@ -96,9 +100,13 @@ object ShareCardGenerator {
 
         val bitmap = Bitmap.createBitmap(COLLAGE_SIZE, COLLAGE_SIZE, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        canvas.drawColor(WARM_CANVAS)
-        drawPhotoCollage(canvas, photos, RectF(48f, 48f, 1032f, 1032f))
-        return saveBitmap(context, bitmap, "memory-collage-${memory.memoryId.ifBlank { UUID.randomUUID().toString() }}.png")
+        try {
+            canvas.drawColor(WARM_CANVAS)
+            drawPhotoCollage(canvas, photos, RectF(48f, 48f, 1032f, 1032f))
+            return saveBitmap(context, bitmap, "memory-collage-${memory.memoryId.ifBlank { UUID.randomUUID().toString() }}.png")
+        } finally {
+            photos.recycleAll()
+        }
     }
 
     fun shareImage(context: Context, uri: Uri, chooserTitle: String) {
@@ -412,6 +420,12 @@ object ShareCardGenerator {
                 }
             }
         }.getOrNull()
+
+    private fun List<Bitmap>.recycleAll() {
+        forEach { bitmap ->
+            if (!bitmap.isRecycled) bitmap.recycle()
+        }
+    }
 
     private fun Long?.toShareDate(): String =
         this?.takeIf { it > 0L }?.let {

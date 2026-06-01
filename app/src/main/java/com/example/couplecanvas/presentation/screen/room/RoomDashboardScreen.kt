@@ -53,7 +53,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +65,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.couplecanvas.data.model.BucketItem
@@ -120,7 +120,7 @@ fun RoomDashboardScreen(roomId: String, initialTab: Int = 0, onBack: () -> Unit)
             RoomFeatureViewModel(roomId, container.authRepository, container.roomRepository, container.featureRepository, container.widgetStateStore)
         },
     )
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedNavItem by remember(roomId, initialTab) { mutableIntStateOf(if (initialTab <= 3) initialTab else 4) }
     var selectedMoreSubTab by remember(roomId, initialTab) { mutableIntStateOf((initialTab - 4).coerceAtLeast(0)) }
     val snackbarHostState = remember { SnackbarHostState() }

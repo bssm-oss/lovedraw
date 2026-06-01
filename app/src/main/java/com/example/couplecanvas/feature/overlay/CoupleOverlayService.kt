@@ -85,8 +85,11 @@ class CoupleOverlayService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> {
-                stopOverlay(updateEnabledState = true)
-                stopSelf()
+                scope.launch {
+                    stopOverlay(updateEnabledState = false)
+                    overlayStateStore.setEnabled(false)
+                    stopSelf()
+                }
                 return START_NOT_STICKY
             }
 
@@ -554,7 +557,12 @@ class CoupleOverlayService : Service() {
     }
 
     private fun List<Stroke>.withReceiverLocalLaserExpiry(uid: String?, now: Long): List<Stroke> =
-        map { stroke ->
+        also { strokes ->
+            val currentStrokeIds = strokes.mapTo(mutableSetOf()) { it.strokeId }
+            remoteLaserExpiries.entries.removeAll { (strokeId, expiry) ->
+                expiry.localExpiresAt <= now || strokeId !in currentStrokeIds
+            }
+        }.map { stroke ->
             if (stroke.expiresAt <= 0L || stroke.ownerUid == uid) return@map stroke
             val cached = remoteLaserExpiries[stroke.strokeId]
             if (cached != null && cached.sourceExpiresAt >= stroke.expiresAt) {

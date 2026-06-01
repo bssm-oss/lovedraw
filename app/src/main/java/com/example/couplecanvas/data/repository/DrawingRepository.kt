@@ -166,21 +166,25 @@ class DrawingRepository(private val firebase: FirebaseProvider) {
     suspend fun saveSnapshot(roomId: String, uid: String, bitmap: Bitmap, caption: String?, context: Context): DrawingSnapshot {
         val id = UUID.randomUUID().toString()
         val file = File(context.cacheDir, "$id.png")
-        FileOutputStream(file).use { stream -> bitmap.compress(Bitmap.CompressFormat.PNG, 96, stream) }
-        val path = "rooms/$roomId/uploads/$uid/drawings/$id.png"
-        val ref = firebase.storage.reference.child(path)
-        val metadata = StorageMetadata.Builder()
-            .setContentType("image/png")
-            .build()
-        ref.putFile(Uri.fromFile(file), metadata).await()
-        val url = ref.downloadUrl.await().toString()
-        val snapshot = DrawingSnapshot(id, uid, url, path, System.currentTimeMillis(), caption)
-        firebase.root.updateChildren(
-            mapOf(
-                "rooms/$roomId/drawingSnapshots/$id" to snapshot,
-                "rooms/$roomId/updatedAt" to System.currentTimeMillis(),
-            )
-        ).await()
-        return snapshot
+        try {
+            FileOutputStream(file).use { stream -> bitmap.compress(Bitmap.CompressFormat.PNG, 96, stream) }
+            val path = "rooms/$roomId/uploads/$uid/drawings/$id.png"
+            val ref = firebase.storage.reference.child(path)
+            val metadata = StorageMetadata.Builder()
+                .setContentType("image/png")
+                .build()
+            ref.putFile(Uri.fromFile(file), metadata).await()
+            val url = ref.downloadUrl.await().toString()
+            val snapshot = DrawingSnapshot(id, uid, url, path, System.currentTimeMillis(), caption)
+            firebase.root.updateChildren(
+                mapOf(
+                    "rooms/$roomId/drawingSnapshots/$id" to snapshot,
+                    "rooms/$roomId/updatedAt" to System.currentTimeMillis(),
+                )
+            ).await()
+            return snapshot
+        } finally {
+            file.delete()
+        }
     }
 }
