@@ -113,14 +113,20 @@ class HomeViewModel(
         }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isBusy = true, error = null, message = null, joinedRoomId = null)
-            when (val result = roomRepository.joinRoom(normalized, uid)) {
-                is JoinRoomResult.Success -> _uiState.value = _uiState.value.copy(isBusy = false, joinedRoomId = result.roomId)
-                JoinRoomResult.NotFound -> _uiState.value = _uiState.value.copy(isBusy = false, error = "없는 코드예요")
-                JoinRoomResult.Full -> _uiState.value = _uiState.value.copy(isBusy = false, error = "이미 가득 찬 방이에요")
-                JoinRoomResult.Closed -> _uiState.value = _uiState.value.copy(isBusy = false, error = "보관된 방이에요")
-                JoinRoomResult.AlreadyMember -> _uiState.value = _uiState.value.copy(isBusy = false)
-                is JoinRoomResult.Error -> _uiState.value = _uiState.value.copy(isBusy = false, error = result.message)
-            }
+            runCatching { roomRepository.joinRoom(normalized, uid) }
+                .onSuccess { result ->
+                    when (result) {
+                        is JoinRoomResult.Success -> _uiState.value = _uiState.value.copy(isBusy = false, joinedRoomId = result.roomId)
+                        JoinRoomResult.NotFound -> _uiState.value = _uiState.value.copy(isBusy = false, error = "없는 코드예요")
+                        JoinRoomResult.Full -> _uiState.value = _uiState.value.copy(isBusy = false, error = "이미 가득 찬 방이에요")
+                        JoinRoomResult.Closed -> _uiState.value = _uiState.value.copy(isBusy = false, error = "보관된 방이에요")
+                        JoinRoomResult.AlreadyMember -> _uiState.value = _uiState.value.copy(isBusy = false)
+                        is JoinRoomResult.Error -> _uiState.value = _uiState.value.copy(isBusy = false, error = result.message)
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(isBusy = false, error = error.message ?: "입장에 실패했어요")
+                }
         }
     }
 

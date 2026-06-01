@@ -2,6 +2,7 @@ package com.example.couplecanvas.presentation.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -9,6 +10,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.couplecanvas.presentation.screen.auth.LoginScreen
 import com.example.couplecanvas.presentation.screen.home.HomeScreen
+import com.example.couplecanvas.presentation.screen.permission.PermissionOnboardingScreen
+import com.example.couplecanvas.presentation.screen.permission.hasRequiredStartupPermissions
 import com.example.couplecanvas.presentation.screen.room.RoomDashboardScreen
 import com.example.couplecanvas.presentation.screen.waiting.WaitingRoomScreen
 
@@ -19,6 +22,8 @@ fun CoupleCanvasNavHost(
 ) {
     val navController = rememberNavController()
     val container = LocalAppContainer.current
+    val context = LocalContext.current
+    val startDestination = if (hasRequiredStartupPermissions(context)) "login" else "permissions"
 
     fun navigateToHomeOrLaunchTarget() {
         val target = launchTarget
@@ -36,20 +41,51 @@ fun CoupleCanvasNavHost(
         }
     }
 
-    LaunchedEffect(launchTarget, container.authRepository.currentUser?.uid) {
-        val target = launchTarget ?: return@LaunchedEffect
-        if (container.authRepository.currentUser != null) {
-            navController.navigate(target.route) { launchSingleTop = true }
-            onLaunchTargetConsumed()
+    fun navigateAfterSignIn() {
+        if (hasRequiredStartupPermissions(context)) {
+            navigateToHomeOrLaunchTarget()
+        } else {
+            navController.navigate("permissions") {
+                popUpTo("login") { inclusive = true }
+                launchSingleTop = true
+            }
         }
     }
 
-    NavHost(navController = navController, startDestination = "login") {
+    fun navigateAfterPermissions() {
+        if (container.authRepository.currentUser != null) {
+            navigateToHomeOrLaunchTarget()
+        } else {
+            navController.navigate("login") {
+                popUpTo("permissions") { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
+    LaunchedEffect(launchTarget, container.authRepository.currentUser?.uid) {
+        val target = launchTarget ?: return@LaunchedEffect
+        if (container.authRepository.currentUser != null) {
+            if (hasRequiredStartupPermissions(context)) {
+                navController.navigate(target.route) { launchSingleTop = true }
+                onLaunchTargetConsumed()
+            } else {
+                navController.navigate("permissions") { launchSingleTop = true }
+            }
+        }
+    }
+
+    NavHost(navController = navController, startDestination = startDestination) {
         composable("login") {
             LoginScreen(
                 onSignedIn = {
-                    navigateToHomeOrLaunchTarget()
+                    navigateAfterSignIn()
                 },
+            )
+        }
+        composable("permissions") {
+            PermissionOnboardingScreen(
+                onReady = { navigateAfterPermissions() },
             )
         }
         composable("home") {

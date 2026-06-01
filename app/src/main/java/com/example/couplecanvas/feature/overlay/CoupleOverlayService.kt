@@ -60,7 +60,7 @@ class CoupleOverlayService : Service() {
     private var activeStrokes: List<Stroke> = emptyList()
     private var localPendingStrokes: List<Stroke> = emptyList()
     private var localActiveStroke: Stroke? = null
-    private var brush = BrushState(color = "#FFFFFF", width = 20f, eraser = false)
+    private var brush = BrushState(color = "#E5484D", width = 8f, eraser = false, laser = false)
     private var drawingMode: Boolean = false
     private var pointIndex = 0
     private var lastSentAt = 0L
@@ -117,7 +117,7 @@ class CoupleOverlayService : Service() {
 
         requestedRoomId = intent?.getStringExtra(EXTRA_OVERLAY_ROOM_ID).orEmpty()
         requestedRoomTitle = intent?.getStringExtra(EXTRA_OVERLAY_ROOM_TITLE).orEmpty()
-        if (requestedRoomId.isNotBlank() && currentRoomId.isBlank()) {
+        if (requestedRoomId.isNotBlank()) {
             currentRoomId = requestedRoomId
             currentRoomTitle = requestedRoomTitle.ifBlank { "둘만의 그림방" }
         }
@@ -127,6 +127,9 @@ class CoupleOverlayService : Service() {
         observeSnapshot()
         observeDrawingRoom(currentRoomId, privacyMode)
         scope.launch { overlayStateStore.setEnabled(true) }
+        if (intent?.getBooleanExtra(EXTRA_START_DRAWING, false) == true) {
+            setDrawingMode(true)
+        }
         return START_STICKY
     }
 
@@ -269,6 +272,9 @@ class CoupleOverlayService : Service() {
             onStartStroke = ::startStroke
             onMoveStroke = ::appendPoint
             onEndStroke = ::finishStroke
+            onBrushColorSelected = ::selectBrushColor
+            onEraserSelected = ::selectEraser
+            onCloseDrawing = { setDrawingMode(false) }
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -287,6 +293,18 @@ class CoupleOverlayService : Service() {
             localActiveStroke = null
             activeSendJob?.cancel()
         }
+        renderOverlay()
+        updateNotification()
+    }
+
+    private fun selectBrushColor(color: String) {
+        brush = brush.copy(color = color, eraser = false)
+        renderOverlay()
+        updateNotification()
+    }
+
+    private fun selectEraser() {
+        brush = brush.copy(eraser = true)
         renderOverlay()
         updateNotification()
     }
@@ -389,19 +407,9 @@ class CoupleOverlayService : Service() {
         val canDraw = currentRoomId.isNotBlank() && !privacyMode && uid != null
         drawingCanvasView?.setOverlayContent(
             strokes = allStrokes,
-            message = overlayMessage(canDraw),
+            brush = brush,
             drawingEnabled = canDraw && drawingMode,
         )
-    }
-
-    private fun overlayMessage(canDraw: Boolean): String? = when {
-        privacyMode -> "프라이버시 모드"
-        currentRoomId.isBlank() -> "방 없음"
-        authRepository.currentUser == null -> "로그인 필요"
-        !canDraw -> "준비 중"
-        !drawingMode && finishedStrokes.isEmpty() && activeStrokes.isEmpty() && localPendingStrokes.isEmpty() && localActiveStroke == null ->
-            null
-        else -> null
     }
 
     private fun stopOverlay(updateEnabledState: Boolean) {
@@ -452,20 +460,6 @@ class CoupleOverlayService : Service() {
             toggleIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val undoIntent = Intent(this, CoupleOverlayService::class.java).setAction(ACTION_UNDO)
-        val undoPendingIntent = PendingIntent.getService(
-            this,
-            3,
-            undoIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val clearIntent = Intent(this, CoupleOverlayService::class.java).setAction(ACTION_CLEAR)
-        val clearPendingIntent = PendingIntent.getService(
-            this,
-            4,
-            clearIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
         val drawingActionLabel = if (drawingMode) "그리기 완료" else "그리기 시작"
         val drawingActionIcon = if (drawingMode) android.R.drawable.ic_menu_save else android.R.drawable.ic_menu_edit
         val now = System.currentTimeMillis()
@@ -494,20 +488,6 @@ class CoupleOverlayService : Service() {
                     Icon.createWithResource(this, drawingActionIcon),
                     drawingActionLabel,
                     togglePendingIntent,
-                ).build(),
-            )
-            .addAction(
-                Notification.Action.Builder(
-                    Icon.createWithResource(this, android.R.drawable.ic_menu_revert),
-                    "취소",
-                    undoPendingIntent,
-                ).build(),
-            )
-            .addAction(
-                Notification.Action.Builder(
-                    Icon.createWithResource(this, android.R.drawable.ic_menu_delete),
-                    "지우기",
-                    clearPendingIntent,
                 ).build(),
             )
             .addAction(
@@ -590,14 +570,21 @@ class CoupleOverlayService : Service() {
         const val ACTION_CLEAR = "com.example.couplecanvas.overlay.CLEAR"
         private const val EXTRA_OVERLAY_ROOM_ID = "com.example.couplecanvas.overlay.ROOM_ID"
         private const val EXTRA_OVERLAY_ROOM_TITLE = "com.example.couplecanvas.overlay.ROOM_TITLE"
+        private const val EXTRA_START_DRAWING = "com.example.couplecanvas.overlay.START_DRAWING"
         private const val CHANNEL_ID = "couple_canvas_overlay"
         private const val NOTIFICATION_ID = 4132
 
-        fun showIntent(context: Context, roomId: String? = null, roomTitle: String? = null): Intent =
+        fun showIntent(
+            context: Context,
+            roomId: String? = null,
+            roomTitle: String? = null,
+            startDrawing: Boolean = false,
+        ): Intent =
             Intent(context, CoupleOverlayService::class.java)
                 .setAction(ACTION_SHOW)
                 .putExtra(EXTRA_OVERLAY_ROOM_ID, roomId.orEmpty())
                 .putExtra(EXTRA_OVERLAY_ROOM_TITLE, roomTitle.orEmpty())
+                .putExtra(EXTRA_START_DRAWING, startDrawing)
 
         fun stopIntent(context: Context): Intent =
             Intent(context, CoupleOverlayService::class.java).setAction(ACTION_STOP)

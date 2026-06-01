@@ -162,7 +162,12 @@ fun RoomDashboardScreen(roomId: String, initialTab: Int = 0, onBack: () -> Unit)
                 onBack = onBack,
             )
             when (selectedNavItem) {
-                0 -> DrawingScreen(roomId = roomId, roomCode = room?.roomCode)
+                0 -> DrawingScreen(
+                    roomId = roomId,
+                    roomCode = room?.roomCode,
+                    roomTitle = room?.title,
+                    privacyMode = room?.privacyMode ?: false,
+                )
                 1 -> NotesTab(uiState, viewModel)
                 2 -> DatePlannerTab(uiState, viewModel)
                 3 -> MemoriesTab(uiState, viewModel)

@@ -38,11 +38,9 @@ class DrawingCanvasRenderTest {
             CoupleCanvasTheme {
                 DrawingCanvas(
                     uiState = DrawingUiState(strokes = listOf(stroke), isLoading = false),
-                    transformMode = false,
                     onStart = { _, _ -> },
                     onMove = { _, _ -> },
                     onEnd = {},
-                    onTransform = { _, _, _ -> },
                     modifier = Modifier.size(260.dp),
                 )
             }
@@ -82,11 +80,9 @@ class DrawingCanvasRenderTest {
             CoupleCanvasTheme {
                 DrawingCanvas(
                     uiState = DrawingUiState(localPendingStrokes = listOf(pendingStroke), isLoading = false),
-                    transformMode = false,
                     onStart = { _, _ -> },
                     onMove = { _, _ -> },
                     onEnd = {},
-                    onTransform = { _, _, _ -> },
                     modifier = Modifier.size(260.dp),
                 )
             }
@@ -137,11 +133,9 @@ class DrawingCanvasRenderTest {
             CoupleCanvasTheme {
                 DrawingCanvas(
                     uiState = DrawingUiState(strokes = listOf(paintStroke, eraserStroke), isLoading = false),
-                    transformMode = false,
                     onStart = { _, _ -> },
                     onMove = { _, _ -> },
                     onEnd = {},
-                    onTransform = { _, _, _ -> },
                     modifier = Modifier.size(260.dp),
                 )
             }

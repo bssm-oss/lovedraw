@@ -27,7 +27,7 @@
     },
     "rooms": {
       "$roomId": {
-        ".read": "auth != null && (data.child('members').child(auth.uid).val() === true || data.child('hostUid').val() === auth.uid || data.child('guestUid').val() === auth.uid)",
+        ".read": "auth != null && (data.child('status').val() === 'waiting' || data.child('members').child(auth.uid).val() === true || data.child('hostUid').val() === auth.uid || data.child('guestUid').val() === auth.uid)",
         ".write": "auth != null && ((!data.exists() && newData.exists() && newData.child('roomId').val() === $roomId && newData.child('hostUid').val() === auth.uid && newData.child('members').child(auth.uid).val() === true && newData.child('activeUserCount').val() === 1 && newData.child('status').val() === 'waiting') || (data.exists() && !newData.exists() && data.child('hostUid').val() === auth.uid && data.child('activeUserCount').val() === 1 && data.child('status').val() === 'waiting') || (data.exists() && data.child('status').val() === 'waiting' && !data.child('guestUid').exists() && newData.child('roomId').val() === data.child('roomId').val() && newData.child('roomCode').val() === data.child('roomCode').val() && newData.child('hostUid').val() === data.child('hostUid').val() && newData.child('guestUid').val() === auth.uid && newData.child('members').child(auth.uid).val() === true && newData.child('members').child(data.child('hostUid').val()).val() === true && newData.child('activeUserCount').val() === 2 && newData.child('status').val() === 'active'))",
         "roomId": {
           ".validate": "newData.isString() && newData.val() === $roomId"

@@ -141,6 +141,7 @@ fun HomeScreen(onOpenRoom: (String) -> Unit, onWaitRoom: (String) -> Unit, onSig
                     context = context,
                     roomId = summary.room.roomId,
                     roomTitle = summary.room.title,
+                    startDrawing = true,
                 ),
             )
         }

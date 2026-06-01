@@ -97,17 +97,33 @@ object OverlayStrokeRenderer {
             if (stroke.isExpired(nowMillis)) return@forEach
             val points = stroke.sortedPoints()
             if (points.isEmpty()) return@forEach
+            val haloPaint = if (stroke.eraser) null else strokeHaloPaint(stroke.alpha(nowMillis))
             val paint = strokePaint(stroke, stroke.alpha(nowMillis))
             if (points.size == 1) {
                 val point = points.first()
+                haloPaint?.let {
+                    it.style = Paint.Style.FILL
+                    canvas.drawCircle(point.safeX() * width, point.safeY() * height, it.strokeWidth / 2f, it)
+                }
                 paint.style = Paint.Style.FILL
                 canvas.drawCircle(point.safeX() * width, point.safeY() * height, paint.strokeWidth / 2f, paint)
                 return@forEach
             }
-            canvas.drawPath(points.toPath(width, height), paint)
+            val path = points.toPath(width, height)
+            haloPaint?.let { canvas.drawPath(path, it) }
+            canvas.drawPath(path, paint)
         }
         canvas.restoreToCount(layer)
     }
+
+    private fun strokeHaloPaint(alpha: Float): Paint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb((140 * alpha.coerceIn(0f, 1f)).roundToInt(), 255, 255, 255)
+            style = Paint.Style.STROKE
+            strokeWidth = 14f
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+        }
 
     private fun strokePaint(stroke: Stroke, alpha: Float): Paint =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
