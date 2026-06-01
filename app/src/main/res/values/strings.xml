@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Couple Canvas</string>
+    <string name="widget_days_together">함께한 날</string>
+    <string name="widget_days_together_description">함께한 날짜를 홈 화면이나 지원 기기의 잠금화면에서 확인해요.</string>
+    <string name="widget_date_countdown">데이트 D-Day</string>
+    <string name="widget_date_countdown_description">다음 데이트까지 남은 시간을 민감한 내용 없이 보여줘요.</string>
+    <string name="widget_drawing_preview">최근 낙서</string>
+    <string name="widget_drawing_preview_description">저장한 낙서 스냅샷을 보여주고, Privacy Mode에서는 숨겨요.</string>
+    <string name="widget_memory">최근 추억</string>
+    <string name="widget_memory_description">선택한 추억 사진을 보여주고, Privacy Mode에서는 숨겨요.</string>
+    <string name="widget_love_note">러브노트</string>
+    <string name="widget_love_note_description">최근 노트 또는 새 노트 상태를 민감도에 맞춰 보여줘요.</string>
+    <string name="widget_daily_spark">Daily Spark</string>
+    <string name="widget_daily_spark_description">오늘의 커플 질문과 스트릭 상태를 보여줘요.</string>
+    <string name="widget_stats">우리 통계</string>
+    <string name="widget_stats_description">스트릭, 데이트, 예정 수 같은 방별 통계를 보여줘요.</string>
+    <string name="widget_distance">거리 상태</string>
+    <string name="widget_distance_description">서로 동의한 경우 마지막 공유 기준 거리 상태만 보여줘요.</string>
+</resources>

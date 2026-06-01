@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <application
+        android:name=".CoupleCanvasApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:label="@string/app_name"
+        android:roundIcon="@drawable/ic_launcher_foreground"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.CoupleCanvas"
+        android:usesCleartextTraffic="${usesCleartextTraffic}">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.CoupleCanvas">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <service
+            android:name=".feature.overlay.CoupleOverlayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User-enabled Couple Canvas drawing overlay shown over other apps so the user can draw directly on the screen and sync strokes with their selected room." />
+        </service>
+
+        <receiver
+            android:name=".feature.widgets.DaysTogetherWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_days_together">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/days_together_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".feature.widgets.DateCountdownWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_date_countdown">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/date_countdown_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".feature.widgets.DrawingPreviewWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_drawing_preview">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/drawing_preview_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".feature.widgets.MemoryWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_memory">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/memory_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".feature.widgets.LoveNoteWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_love_note">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/love_note_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".feature.widgets.DailySparkWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_daily_spark">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/daily_spark_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".feature.widgets.StatsWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_stats">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/stats_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".feature.widgets.DistanceWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_distance">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/distance_widget_info" />
+        </receiver>
+    </application>
+</manifest>

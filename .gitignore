@@ -1,0 +1,55 @@
+# Android / Gradle
+.gradle/
+.kotlin/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+local.properties
+*.iml
+.idea/
+
+# Android signing / release secrets
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+keystore.properties
+release.properties
+
+# Environment / local secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Firebase / Google local credentials and logs
+app/google-services.json
+app/google-services.json.*
+firebase-debug.log*
+database-debug.log*
+*.log
+.firebase/
+
+# macOS / editor noise
+.DS_Store
+*.swp
+*.swo
+
+# Local agent/runtime state
+.claude/
+.omc/
+.omx/
+
+# Node/tooling caches if added later
+node_modules/
+.npm/
+.eslintcache
+coverage/
+.nyc_output/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
