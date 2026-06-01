@@ -23,13 +23,24 @@ release.properties
 !.env.example
 *.local
 
-# Firebase / Google local credentials and logs
-app/google-services.json
-app/google-services.json.*
+# Firebase / Google local credentials, project selection, and logs
+.firebaserc
+!.firebaserc.example
+**/google-services.json
+**/google-services.json.*
+!**/google-services.example.json
+**/GoogleService-Info.plist
+**/GoogleService-Info.plist.*
+serviceAccount*.json
+*-service-account.json
+firebase-adminsdk*.json
+*.firebase.json
 firebase-debug.log*
 database-debug.log*
 *.log
 .firebase/
+firebase-export-*/
+emulator-data/
 
 # macOS / editor noise
 .DS_Store

@@ -1,9 +1,28 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
 }
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.isFile) {
+        file.inputStream().use { load(it) }
+    }
+}
+
+fun env(name: String): String? = System.getenv(name)?.takeIf { it.isNotBlank() }
+
+fun setting(name: String, defaultValue: String): String =
+    providers.gradleProperty(name).orNull
+        ?: localProperties.getProperty(name)
+        ?: env(name)
+        ?: defaultValue
+
+fun String.asBuildConfigString(): String = "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
 
 android {
     namespace = "com.example.couplecanvas"
@@ -17,7 +36,11 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "DATABASE_URL", "\"https://lovedraw-56139-default-rtdb.asia-southeast1.firebasedatabase.app\"")
+        buildConfigField(
+            "String",
+            "DATABASE_URL",
+            setting("COUPLE_CANVAS_DATABASE_URL", "https://your-project-id-default-rtdb.firebaseio.com").asBuildConfigString(),
+        )
         buildConfigField("boolean", "USE_FIREBASE_EMULATORS", "false")
         buildConfigField("String", "FIREBASE_EMULATOR_HOST", "\"10.0.2.2\"")
         buildConfigField("int", "FIREBASE_AUTH_EMULATOR_PORT", "9099")
@@ -28,7 +51,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("boolean", "USE_FIREBASE_EMULATORS", "true")
+            buildConfigField("boolean", "USE_FIREBASE_EMULATORS", setting("COUPLE_CANVAS_USE_FIREBASE_EMULATORS", "false"))
             manifestPlaceholders["usesCleartextTraffic"] = "true"
         }
         release {
