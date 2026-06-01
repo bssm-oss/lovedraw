@@ -35,8 +35,11 @@ class FirebaseRoomDrawingIntegrationTest {
                 val roomRepository = RoomRepository(firebase)
                 val drawingRepository = DrawingRepository(firebase)
 
-                val hostUid = "host-${UUID.randomUUID()}"
-                val guestUid = "guest-${UUID.randomUUID()}"
+                val host = firebase.createTestAccount("host")
+                val guest = firebase.createTestAccount("guest")
+
+                firebase.signIn(host)
+                val hostUid = host.uid
                 val roomId = roomRepository.createRoom(hostUid, title = "통합 테스트 그림방")
                 val roomCode = requireNotNull(
                     firebase.root.child("rooms").child(roomId).child("roomCode").get().await().getValue(String::class.java),
@@ -44,6 +47,8 @@ class FirebaseRoomDrawingIntegrationTest {
                 val mappedRoomId = firebase.root.child("roomCodes").child(roomCode).get().await().getValue(String::class.java)
                 assertEquals(roomId, mappedRoomId)
 
+                firebase.signIn(guest)
+                val guestUid = guest.uid
                 val joinResult = roomRepository.joinRoom(roomCode, guestUid)
                 assertTrue("join result was $joinResult", joinResult is JoinRoomResult.Success)
                 assertEquals(roomId, (joinResult as JoinRoomResult.Success).roomId)
@@ -95,8 +100,9 @@ class FirebaseRoomDrawingIntegrationTest {
                 assertEquals(stroke.strokeId, finishedStroke?.strokeId)
                 assertEquals(3, finishedStroke?.points?.size)
 
-                firebase.root.child("rooms").child(roomId).removeValue().await()
-                firebase.root.child("roomCodes").child(roomCode).removeValue().await()
+                firebase.signIn(host)
+                roomRepository.closeRoom(roomId, hostUid)
+                firebase.auth.signOut()
             }
         }
     }
@@ -171,5 +177,25 @@ class FirebaseRoomDrawingIntegrationTest {
                 firebase.auth.signOut()
             }
         }
+    }
+
+    private data class TestAccount(
+        val uid: String,
+        val email: String,
+        val password: String,
+    )
+
+    private suspend fun FirebaseProvider.createTestAccount(label: String): TestAccount {
+        val email = "$label-${UUID.randomUUID()}@couplecanvas.test"
+        val password = "Passw0rd-${UUID.randomUUID()}!"
+        val result = auth.createUserWithEmailAndPassword(email, password).await()
+        val uid = requireNotNull(result.user?.uid)
+        auth.signOut()
+        return TestAccount(uid = uid, email = email, password = password)
+    }
+
+    private suspend fun FirebaseProvider.signIn(account: TestAccount) {
+        auth.signOut()
+        auth.signInWithEmailAndPassword(account.email, account.password).await()
     }
 }

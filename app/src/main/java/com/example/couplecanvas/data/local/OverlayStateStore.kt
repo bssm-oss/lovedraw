@@ -16,7 +16,7 @@ class OverlayStateStore(private val context: Context) {
     }
 
     val enabled: Flow<Boolean> = context.overlayDataStore.data.map { prefs ->
-        prefs[Keys.enabled] ?: false
+        prefs[Keys.enabled] ?: true
     }
 
     suspend fun isEnabled(): Boolean = enabled.first()

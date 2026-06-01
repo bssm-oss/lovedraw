@@ -97,7 +97,7 @@ data class BrushState(
     val color: String = "#222222",
     val width: Float = 8f,
     val eraser: Boolean = false,
-    val laser: Boolean = false,
+    val laser: Boolean = true,
 )
 
 data class DrawingUiState(

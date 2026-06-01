@@ -111,9 +111,10 @@ fun DrawingScreen(
     var hasOverlayPermission by remember { mutableStateOf(OverlayPermission.canDrawOverlays(context)) }
     var hasNotificationPermission by remember { mutableStateOf(context.hasOverlayNotificationPermission()) }
 
-    fun startScreenOverlay() {
+    fun startScreenOverlay(startDrawing: Boolean) {
         coroutineScope.launch {
             val title = roomTitle ?: roomCode ?: "Couple Canvas"
+            container.overlayStateStore.setEnabled(true)
             container.widgetStateStore.selectRoom(
                 roomId = roomId,
                 roomTitle = title,
@@ -124,7 +125,7 @@ fun DrawingScreen(
                     context = context,
                     roomId = roomId,
                     roomTitle = title,
-                    startDrawing = true,
+                    startDrawing = startDrawing,
                 ),
             )
         }
@@ -151,13 +152,19 @@ fun DrawingScreen(
             return
         }
         pendingOverlayStart = false
-        startScreenOverlay()
+        startScreenOverlay(startDrawing = true)
+    }
+
+    LaunchedEffect(roomId, roomTitle, roomCode, privacyMode, hasNotificationPermission, hasOverlayPermission) {
+        if (hasNotificationPermission && hasOverlayPermission && !privacyMode) {
+            startScreenOverlay(startDrawing = false)
+        }
     }
 
     LaunchedEffect(pendingOverlayStart, hasNotificationPermission, hasOverlayPermission) {
         if (pendingOverlayStart && hasNotificationPermission && hasOverlayPermission) {
             pendingOverlayStart = false
-            startScreenOverlay()
+            startScreenOverlay(startDrawing = true)
         }
     }
     DisposableEffect(lifecycleOwner, context) {

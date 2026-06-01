@@ -60,7 +60,7 @@ class CoupleOverlayService : Service() {
     private var activeStrokes: List<Stroke> = emptyList()
     private var localPendingStrokes: List<Stroke> = emptyList()
     private var localActiveStroke: Stroke? = null
-    private var brush = BrushState(color = "#E5484D", width = 8f, eraser = false, laser = false)
+    private var brush = BrushState(color = "#E5484D", width = 8f, eraser = false, laser = true)
     private var drawingMode: Boolean = false
     private var pointIndex = 0
     private var lastSentAt = 0L
