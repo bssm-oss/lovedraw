@@ -23,11 +23,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeout
 import java.util.UUID
 import kotlin.coroutines.resume
 
 class RoomRepository(private val firebase: FirebaseProvider) {
     suspend fun createRoom(uid: String, title: String = "둘만의 그림방"): String {
+        awaitAuthenticatedUid(uid)
         var lastCodeFailure: Throwable? = null
         repeat(20) {
             val now = System.currentTimeMillis()
@@ -82,12 +84,15 @@ class RoomRepository(private val firebase: FirebaseProvider) {
     suspend fun joinRoom(roomCode: String, uid: String): JoinRoomResult {
         val normalized = roomCode.trim().uppercase()
         if (!RoomCodeGenerator.isValid(normalized)) return JoinRoomResult.Error("6자리 초대 코드를 확인해주세요")
+        awaitAuthenticatedUid(uid)
         val roomId = firebase.root.child("roomCodes").child(normalized).get().await().getValue(String::class.java)
             ?: return JoinRoomResult.NotFound
 
         val ref = firebase.root.child("rooms").child(roomId)
-        val roomSnapshot = ref.get().await()
-        val room = roomSnapshot.getValue(Room::class.java) ?: return JoinRoomResult.NotFound
+        val roomSnapshot = runCatching { ref.get().await() }.getOrElse {
+            return JoinRoomResult.Full
+        }
+        val room = roomSnapshot.getValue(Room::class.java) ?: return JoinRoomResult.Full
         if (room.status == RoomStatus.Closed.value) return JoinRoomResult.Closed
         if (room.isMember(uid)) {
             updateJoinedMemberPresence(roomId, uid, room)
@@ -110,8 +115,7 @@ class RoomRepository(private val firebase: FirebaseProvider) {
             ref.runTransaction(object : Transaction.Handler {
                 override fun doTransaction(currentData: MutableData): Transaction.Result {
                     val currentRoom = currentData.getValue(Room::class.java) ?: run {
-                        outcome = JoinRoomResult.NotFound
-                        return Transaction.abort()
+                        return Transaction.success(currentData)
                     }
                     if (currentRoom.status == RoomStatus.Closed.value) {
                         outcome = JoinRoomResult.Closed
@@ -161,6 +165,7 @@ class RoomRepository(private val firebase: FirebaseProvider) {
     }
 
     suspend fun closeRoom(roomId: String, uid: String) {
+        awaitAuthenticatedUid(uid)
         val room = firebase.root.child("rooms").child(roomId).get().await().getValue(Room::class.java)
             ?: error("방을 찾지 못했어요")
         require(room.isMember(uid)) { "이 방을 관리할 권한이 없어요" }
@@ -179,6 +184,7 @@ class RoomRepository(private val firebase: FirebaseProvider) {
     }
 
     suspend fun reopenRoom(roomId: String, uid: String): String {
+        awaitAuthenticatedUid(uid)
         val room = firebase.root.child("rooms").child(roomId).get().await().getValue(Room::class.java)
             ?: error("방을 찾지 못했어요")
         require(room.isMember(uid)) { "이 방을 관리할 권한이 없어요" }
@@ -308,6 +314,7 @@ class RoomRepository(private val firebase: FirebaseProvider) {
     }
 
     suspend fun leaveRoom(roomId: String, uid: String) {
+        awaitAuthenticatedUid(uid)
         val room = firebase.root.child("rooms").child(roomId).get().await().getValue(Room::class.java)
             ?: error("방을 찾지 못했어요")
         val currentMembers = room.members
@@ -362,6 +369,7 @@ class RoomRepository(private val firebase: FirebaseProvider) {
     }
 
     suspend fun updateOnlineStatus(roomId: String, uid: String, online: Boolean) {
+        awaitAuthenticatedUid(uid)
         val now = System.currentTimeMillis()
         if (online) {
             firebase.root.child("rooms").child(roomId).child("users").child(uid).child("online").onDisconnect().setValue(false).await()
@@ -376,6 +384,7 @@ class RoomRepository(private val firebase: FirebaseProvider) {
     }
 
     suspend fun updateRoomSettings(roomId: String, title: String, startedAt: Long?, privacyMode: Boolean) {
+        awaitAuthenticatedUid(firebase.auth.currentUser?.uid.orEmpty())
         firebase.root.child("rooms").child(roomId).updateChildren(
             mapOf(
                 "title" to title,
@@ -393,6 +402,41 @@ class RoomRepository(private val firebase: FirebaseProvider) {
             if (!exists) return code
         }
         error("초대 코드를 만들지 못했어요")
+    }
+
+    private suspend fun awaitAuthenticatedUid(uid: String) {
+        val currentUser = firebase.auth.currentUser
+            ?: error("로그인이 필요해요")
+        require(currentUser.uid == uid) { "현재 로그인한 계정과 요청한 사용자가 달라요" }
+        currentUser.getIdToken(false).await()
+        awaitDatabaseConnection()
+    }
+
+    private suspend fun awaitDatabaseConnection() {
+        withTimeout(10_000) {
+            suspendCancellableCoroutine { continuation ->
+                val connectedRef = firebase.database.getReference(".info/connected")
+                val listener = object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        if (snapshot.getValue(Boolean::class.java) == true && continuation.isActive) {
+                            connectedRef.removeEventListener(this)
+                            continuation.resume(Unit)
+                        }
+                    }
+
+                    override fun onCancelled(error: DatabaseError) {
+                        if (continuation.isActive) {
+                            connectedRef.removeEventListener(this)
+                            continuation.resume(Unit)
+                        }
+                    }
+                }
+                connectedRef.addValueEventListener(listener)
+                continuation.invokeOnCancellation {
+                    connectedRef.removeEventListener(listener)
+                }
+            }
+        }
     }
 
     private suspend fun usableRoomCode(currentCode: String, roomId: String): String {
