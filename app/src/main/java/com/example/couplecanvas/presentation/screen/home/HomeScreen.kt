@@ -240,23 +240,6 @@ fun HomeScreen(onOpenRoom: (String) -> Unit, onWaitRoom: (String) -> Unit, onSig
                     )
                 }
             }
-            if (overlaySummary != null) {
-                item {
-                    SecondaryPastelButton(
-                        if (overlayEnabled) "화면 그리기 끄기" else "화면 그리기 켜기",
-                        onClick = {
-                            if (overlayEnabled) {
-                                context.stopOverlayService()
-                                coroutineScope.launch { container.overlayStateStore.setEnabled(false) }
-                            } else {
-                                startOverlay(overlaySummary)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !uiState.isBusy,
-                    )
-                }
-            }
             if (uiState.isLoading) {
                 item { EmptyState("불러오는 중", "잠시만요") }
             } else if (activeSummaries.isEmpty() && archivedSummaries.isEmpty()) {

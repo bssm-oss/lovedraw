@@ -69,8 +69,8 @@ data class DrawingPoint(
 data class Stroke(
     val strokeId: String = "",
     val ownerUid: String = "",
-    val color: String = "#222222",
-    val width: Float = 8f,
+    val color: String = "#D9FF5A6D",
+    val width: Float = 15f,
     val eraser: Boolean = false,
     val createdAt: Long = 0L,
     val expiresAt: Long = 0L,
@@ -88,14 +88,17 @@ data class Stroke(
     }
 
     companion object {
-        const val LASER_TTL_MS = 3_200L
+        const val MARKER_RED = "#D9FF5A6D"
+        const val MARKER_BLUE = "#CC4A7CFF"
+        const val MARKER_BLACK = "#CC2A2926"
+        const val LASER_TTL_MS = 8_000L
         const val LASER_FADE_MS = 900L
     }
 }
 
 data class BrushState(
-    val color: String = "#222222",
-    val width: Float = 8f,
+    val color: String = Stroke.MARKER_RED,
+    val width: Float = 15f,
     val eraser: Boolean = false,
     val laser: Boolean = true,
 )

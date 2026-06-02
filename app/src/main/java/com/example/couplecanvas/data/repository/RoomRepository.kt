@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
 import kotlin.coroutines.resume
 
@@ -413,7 +413,7 @@ class RoomRepository(private val firebase: FirebaseProvider) {
     }
 
     private suspend fun awaitDatabaseConnection() {
-        withTimeout(10_000) {
+        withTimeoutOrNull(2_000) {
             suspendCancellableCoroutine { continuation ->
                 val connectedRef = firebase.database.getReference(".info/connected")
                 val listener = object : ValueEventListener {

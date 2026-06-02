@@ -49,6 +49,15 @@ class DrawingRepository(private val firebase: FirebaseProvider) {
         firebase.root.child("rooms").child(roomId).child("activeStrokes").child(uid).setValue(stroke).await()
     }
 
+    suspend fun clearActiveStroke(roomId: String, uid: String) {
+        firebase.root.updateChildren(
+            mapOf(
+                "rooms/$roomId/activeStrokes/$uid" to null,
+                "rooms/$roomId/updatedAt" to System.currentTimeMillis(),
+            ),
+        ).await()
+    }
+
     suspend fun finishStroke(roomId: String, uid: String, stroke: Stroke) {
         val updates = mapOf(
             "rooms/$roomId/strokes/${stroke.strokeId}" to stroke.copy(createdAt = stroke.createdAt.takeIf { it > 0 } ?: System.currentTimeMillis()),

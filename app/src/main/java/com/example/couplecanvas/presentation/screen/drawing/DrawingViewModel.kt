@@ -177,9 +177,9 @@ class DrawingViewModel(
             ownerUid = uid,
             color = brush.color,
             width = brush.width,
-            eraser = brush.eraser,
+            eraser = false,
             createdAt = now,
-            expiresAt = if (brush.laser && !brush.eraser) now + Stroke.LASER_TTL_MS else 0L,
+            expiresAt = now + Stroke.LASER_TTL_MS,
             points = mapOf(pointKey() to point),
         )
         _uiState.value = _uiState.value.copy(localActiveStroke = stroke, nowMillis = now)
@@ -191,7 +191,7 @@ class DrawingViewModel(
         val now = System.currentTimeMillis()
         val updated = stroke.copy(
             points = stroke.points + (pointKey() to DrawingPoint(x, y, now)),
-            expiresAt = if (stroke.expiresAt > 0L) now + Stroke.LASER_TTL_MS else 0L,
+            expiresAt = now + Stroke.LASER_TTL_MS,
         )
         _uiState.value = _uiState.value.copy(localActiveStroke = updated, nowMillis = now)
         sendActiveThrottled()

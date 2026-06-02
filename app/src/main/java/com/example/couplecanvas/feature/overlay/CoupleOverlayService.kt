@@ -60,7 +60,7 @@ class CoupleOverlayService : Service() {
     private var activeStrokes: List<Stroke> = emptyList()
     private var localPendingStrokes: List<Stroke> = emptyList()
     private var localActiveStroke: Stroke? = null
-    private var brush = BrushState(color = "#E5484D", width = 8f, eraser = false, laser = true)
+    private var brush = BrushState()
     private var drawingMode: Boolean = false
     private var pointIndex = 0
     private var lastSentAt = 0L
@@ -273,7 +273,8 @@ class CoupleOverlayService : Service() {
             onMoveStroke = ::appendPoint
             onEndStroke = ::finishStroke
             onBrushColorSelected = ::selectBrushColor
-            onEraserSelected = ::selectEraser
+            onBrushWidthSelected = ::selectBrushWidth
+            onClearSelected = ::clearCanvas
             onCloseDrawing = { setDrawingMode(false) }
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -292,6 +293,7 @@ class CoupleOverlayService : Service() {
         if (!drawingMode) {
             localActiveStroke = null
             activeSendJob?.cancel()
+            clearOwnActiveStroke()
         }
         renderOverlay()
         updateNotification()
@@ -303,8 +305,8 @@ class CoupleOverlayService : Service() {
         updateNotification()
     }
 
-    private fun selectEraser() {
-        brush = brush.copy(eraser = true)
+    private fun selectBrushWidth(width: Float) {
+        brush = brush.copy(width = width.coerceIn(4f, 32f), eraser = false)
         renderOverlay()
         updateNotification()
     }
@@ -320,9 +322,9 @@ class CoupleOverlayService : Service() {
             ownerUid = uid,
             color = brush.color,
             width = brush.width,
-            eraser = brush.eraser,
+            eraser = false,
             createdAt = now,
-            expiresAt = if (brush.laser && !brush.eraser) now + Stroke.LASER_TTL_MS else 0L,
+            expiresAt = now + Stroke.LASER_TTL_MS,
             points = mapOf(pointKey() to point),
         )
         sendActiveStroke(roomId, uid, force = true)
@@ -334,7 +336,7 @@ class CoupleOverlayService : Service() {
         val now = System.currentTimeMillis()
         localActiveStroke = stroke.copy(
             points = stroke.points + (pointKey() to DrawingPoint(x, y, now)),
-            expiresAt = if (stroke.expiresAt > 0L) now + Stroke.LASER_TTL_MS else 0L,
+            expiresAt = now + Stroke.LASER_TTL_MS,
         )
         val uid = authRepository.currentUser?.uid ?: return
         val roomId = currentRoomId.takeIf { it.isNotBlank() && !privacyMode } ?: return
@@ -370,6 +372,12 @@ class CoupleOverlayService : Service() {
         activeSendJob = scope.launch {
             runCatching { drawingRepository.updateActiveStroke(roomId, uid, stroke) }
         }
+    }
+
+    private fun clearOwnActiveStroke() {
+        val uid = authRepository.currentUser?.uid ?: return
+        val roomId = currentRoomId.takeIf { it.isNotBlank() && !privacyMode } ?: return
+        scope.launch { runCatching { drawingRepository.clearActiveStroke(roomId, uid) } }
     }
 
     private fun clearCanvas() {
@@ -460,21 +468,27 @@ class CoupleOverlayService : Service() {
             toggleIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val drawingActionLabel = if (drawingMode) "그리기 완료" else "그리기 시작"
-        val drawingActionIcon = if (drawingMode) android.R.drawable.ic_menu_save else android.R.drawable.ic_menu_edit
+        val clearIntent = Intent(this, CoupleOverlayService::class.java).setAction(ACTION_CLEAR)
+        val clearPendingIntent = PendingIntent.getService(
+            this,
+            3,
+            clearIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val drawingActionLabel = if (drawingMode) "그리기 끄기" else "그리기 시작"
+        val drawingActionIcon = if (drawingMode) android.R.drawable.ic_media_pause else android.R.drawable.ic_menu_edit
         val now = System.currentTimeMillis()
-        val strokeCount = (finishedStrokes + localPendingStrokes + activeStrokes).count { !it.isExpired(now) }
         val title = currentRoomTitle.ifBlank { "Couple Canvas" }
         val contentText = if (drawingMode) {
-            "그리는 중"
+            "그리기 켜짐"
         } else {
-            "보기 중"
+            "그리기 꺼짐"
         }
-        val bigText = "$title · 선 ${strokeCount}개\n$contentText"
+        val bigText = "$title\n$contentText"
 
         return Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Couple Canvas")
+            .setContentTitle(title)
             .setContentText(contentText)
             .setStyle(Notification.BigTextStyle().bigText(bigText))
             .setContentIntent(openPendingIntent)
@@ -492,8 +506,15 @@ class CoupleOverlayService : Service() {
             )
             .addAction(
                 Notification.Action.Builder(
+                    Icon.createWithResource(this, android.R.drawable.ic_menu_delete),
+                    "전체 지우기",
+                    clearPendingIntent,
+                ).build(),
+            )
+            .addAction(
+                Notification.Action.Builder(
                     Icon.createWithResource(this, android.R.drawable.ic_menu_close_clear_cancel),
-                    "끄기",
+                    "종료",
                     stopPendingIntent,
                 ).build(),
             )
@@ -508,10 +529,10 @@ class CoupleOverlayService : Service() {
         val manager = getSystemService(NotificationManager::class.java)
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "그리기",
+            "화면 위 그리기",
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "그리기 도구"
+            description = "알림에서 화면 위 그리기를 켜고 끄는 도구"
             setShowBadge(false)
         }
         manager.createNotificationChannel(channel)
