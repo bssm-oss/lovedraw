@@ -46,6 +46,7 @@
 - Firebase service account JSON
 - Firebase emulator export
 - Firebase/Gradle/Android 로그
+- 출시 전 실기기 증거 영상/스크린샷(`release-evidence/`)
 - 빌드 산출물
 - 로컬 agent/runtime 상태 폴더
 
@@ -195,7 +196,17 @@ Firebase Console에서 켜야 하는 기능:
 
     이 태스크는 운영 Firebase URL, 공개 개인정보처리방침 URL, 계정/데이터 삭제 URL, 문의 이메일, release signing, 로컬 `app/google-services.json` 존재 여부를 확인합니다. Play Console 입력값과 Firebase Console의 release SHA 등록은 콘솔에서 별도로 확인해야 합니다.
 
-12. 민감 파일이 Git에 올라가지 않았는지 확인합니다.
+12. 실기기/에뮬레이터 증거 파일을 로컬에 남겼는지 확인합니다.
+
+    증거 파일은 `release-evidence/`에 보관합니다. 이 폴더는 개인정보가 들어갈 수 있으므로 Git에 올리지 않습니다.
+
+    ```bash
+    ./scripts/verify_release_evidence.sh
+    ```
+
+    필요한 파일 목록은 [docs/release-evidence-checklist.md](./docs/release-evidence-checklist.md)를 확인하세요.
+
+13. 민감 파일이 Git에 올라가지 않았는지 확인합니다.
 
     ```bash
     ./scripts/check_sensitive_files.sh
@@ -299,6 +310,8 @@ Google Play 제출 체크리스트는 [docs/play-console-release-checklist.md](.
 
 Data Safety 답변 초안은 [docs/play-console-data-safety-ko.md](./docs/play-console-data-safety-ko.md), Foreground Service special use 선언 초안은 [docs/foreground-service-special-use-ko.md](./docs/foreground-service-special-use-ko.md)에 있습니다.
 
+출시 전 실기기 증거 체크리스트는 [docs/release-evidence-checklist.md](./docs/release-evidence-checklist.md)에 있습니다.
+
 릴리스 서명은 `keystore.properties.example`을 `keystore.properties`로 복사한 뒤 로컬 비밀값을 채우거나, 같은 이름의 환경변수로 설정합니다. `keystore.properties`와 실제 keystore 파일은 커밋하지 않습니다.
 
 새 upload keystore가 필요하면 아래 스크립트를 사용할 수 있습니다.
@@ -328,6 +341,11 @@ Data Safety 답변 초안은 [docs/play-console-data-safety-ko.md](./docs/play-c
 - 네트워크 끊김/재연결
 - Firebase Database Rules
 - Firebase Storage Rules
+- 출시 전 증거 파일 검증:
+
+  ```bash
+  ./scripts/verify_release_evidence.sh
+  ```
 
 ## 문제 해결
 

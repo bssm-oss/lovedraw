@@ -108,6 +108,7 @@ Play Console Data safety 답변 초안은 [docs/play-console-data-safety-ko.md](
 - 위치 권한 거부/허용, 한쪽만 동의, 양쪽 동의, 마지막 공유 기준 표시 테스트
 - 카카오톡/인스타그램 미설치 상태와 설치 상태에서 초대 공유 fallback 테스트
 - QR 스캔으로 `lovedraw://invite?code=XXXXXX` 링크가 앱을 열고 코드 입장을 시도하는지 테스트
+- 출시 전 실기기 증거는 [docs/release-evidence-checklist.md](./docs/release-evidence-checklist.md)에 맞춰 로컬 `release-evidence/`에 보관하고 `./scripts/verify_release_evidence.sh`로 확인
 - 릴리스 빌드 전 `git ls-files`로 `google-services.json`, `firebase-debug.log`, `database-debug.log`, `.env`가 추적되지 않는지 확인
 
 ## 참고 정책

@@ -12,6 +12,7 @@ FORBIDDEN_TRACKED_FILES="$(
     '.env' '.env.*' \
     'app/google-services.json' 'app/src/*/google-services.json' '**/google-services.json' '**/google-services.json.*' \
     '.firebaserc' \
+    'release-evidence/**' 'release-evidence-*/*' \
     'keystore.properties' '*.keystore' '*.jks' '*.p12' '*.pem' '*.key' \
     'serviceAccount*.json' '*-service-account.json' 'firebase-adminsdk*.json' \
   | grep -Ev '(^|/)(\.env\.example|\.firebaserc\.example|google-services\.example\.json|keystore\.properties\.example)$' || true

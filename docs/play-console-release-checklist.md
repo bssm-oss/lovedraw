@@ -152,6 +152,14 @@ lovedraw uses a user-enabled foreground service to show a drawing overlay over o
 - 한쪽만 위치 공유 동의한 상태
 - 양쪽 동의 후 1회 위치 공유
 
+실기기 증거는 저장소 밖 로컬 폴더에 보관한다. 기본 위치는 `release-evidence/`이며, 이 폴더는 Git에 커밋하지 않는다.
+
+필수 증거 파일 목록은 [docs/release-evidence-checklist.md](./release-evidence-checklist.md)를 따른다.
+
+```bash
+./scripts/verify_release_evidence.sh
+```
+
 ## 7. 저장소 업로드 전 확인
 
 ```bash
@@ -162,6 +170,7 @@ git ls-files firebase-debug.log database-debug.log '*.log' '.env' '.env.*' 'app/
 
 ```bash
 ./gradlew :app:verifyReleaseReadiness
+./scripts/verify_release_evidence.sh
 ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:assembleRelease
 ```
 
