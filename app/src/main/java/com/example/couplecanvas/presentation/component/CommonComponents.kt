@@ -100,9 +100,9 @@ fun LegalLinksCard(modifier: Modifier = Modifier) {
         SectionTitle("개인정보 처리")
         Text(
             if (legalLinks.isReleaseReady) {
-                "개인정보처리방침, 계정/데이터 삭제 요청, 문의 경로가 준비되어 있어요."
+                "개인정보 처리 기준, 데이터 삭제 요청, 문의 경로를 여기서 확인할 수 있어요."
             } else {
-                "출시 전 운영자 연락처, 개인정보처리방침 URL, 계정/데이터 삭제 URL을 설정해야 해요."
+                "개인정보 안내 링크가 아직 연결되지 않았어요. 앱 업데이트 후 다시 확인해주세요."
             },
             color = WarmGray,
             style = MaterialTheme.typography.bodyMedium,

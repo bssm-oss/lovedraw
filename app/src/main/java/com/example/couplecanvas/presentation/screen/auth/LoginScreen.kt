@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,8 +16,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
@@ -51,6 +56,8 @@ import com.example.couplecanvas.presentation.theme.Coral
 import com.example.couplecanvas.presentation.theme.SunshineYellow
 import com.example.couplecanvas.presentation.theme.WarmBlack
 import com.example.couplecanvas.presentation.theme.WarmGray
+import com.example.couplecanvas.presentation.theme.WarmSurfaceAlt
+import com.example.couplecanvas.util.LoginLegalConsentCopy
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -72,6 +79,7 @@ fun LoginScreen(onSignedIn: () -> Unit) {
     val credentialManager = remember(context) { CredentialManager.create(context) }
     val coroutineScope = rememberCoroutineScope()
     var credentialFlowLoading by remember { mutableStateOf(false) }
+    var legalConsentAccepted by remember { mutableStateOf(false) }
     val isLoading = uiState.isLoading || credentialFlowLoading
 
     LaunchedEffect(user) {
@@ -144,12 +152,20 @@ fun LoginScreen(onSignedIn: () -> Unit) {
                     color = WarmBlack,
                 )
                 Spacer(Modifier.height(8.dp))
+                LegalLinksCard(Modifier.fillMaxWidth())
+                LoginLegalConsentRow(
+                    checked = legalConsentAccepted,
+                    onCheckedChange = { legalConsentAccepted = it },
+                )
                 RoundedPastelButton(
                     text = if (isLoading) "로그인 중..." else "Google로 시작하기",
-                    enabled = !isLoading && webClientId.isNotBlank(),
+                    enabled = !isLoading && webClientId.isNotBlank() && legalConsentAccepted,
                     onClick = signInClick,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                if (!legalConsentAccepted) {
+                    Text(LoginLegalConsentCopy.REQUIRED, color = WarmGray, style = MaterialTheme.typography.bodySmall)
+                }
                 if (webClientId.isBlank()) {
                     Text("Google 설정 필요", color = Coral, style = MaterialTheme.typography.bodySmall)
                 }
@@ -157,8 +173,43 @@ fun LoginScreen(onSignedIn: () -> Unit) {
                     SecondaryDebugLoginButton(enabled = !isLoading, onClick = viewModel::signInForDebugTest)
                 }
                 uiState.error?.let { Text(it, color = Coral, style = MaterialTheme.typography.bodySmall) }
-                LegalLinksCard(Modifier.fillMaxWidth())
             }
+        }
+    }
+}
+
+@Composable
+private fun LoginLegalConsentRow(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(WarmSurfaceAlt.copy(alpha = 0.72f))
+            .toggleable(
+                value = checked,
+                role = Role.Checkbox,
+                onValueChange = onCheckedChange,
+            )
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = null,
+            colors = CheckboxDefaults.colors(
+                checkedColor = SunshineYellow,
+                checkmarkColor = WarmBlack,
+                uncheckedColor = WarmGray,
+            ),
+        )
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(LoginLegalConsentCopy.TITLE, style = MaterialTheme.typography.labelLarge, color = WarmBlack)
+            Text(LoginLegalConsentCopy.BODY, style = MaterialTheme.typography.bodySmall, color = WarmGray)
+            Text(LoginLegalConsentCopy.CHECKBOX, style = MaterialTheme.typography.bodySmall, color = WarmBlack)
         }
     }
 }
