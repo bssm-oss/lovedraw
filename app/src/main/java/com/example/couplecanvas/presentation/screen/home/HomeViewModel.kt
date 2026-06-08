@@ -69,6 +69,9 @@ class HomeViewModel(
                     displayName = user.displayName ?: user.email ?: "Google 계정",
                     isLoading = true,
                 )
+                launch {
+                    runCatching { authRepository.upsertUser(user) }
+                }
                 roomRepository.observeRoomSummariesForUser(user.uid).collect { summaries ->
                     _uiState.value = _uiState.value.copy(
                         rooms = summaries.map { it.room },

@@ -2,6 +2,10 @@ package com.example.couplecanvas.presentation.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -24,10 +28,12 @@ fun CoupleCanvasNavHost(
     val container = LocalAppContainer.current
     val context = LocalContext.current
     val startDestination = if (hasRequiredStartupPermissions(context)) "login" else "permissions"
+    var pendingInviteCode by remember { mutableStateOf<String?>(null) }
 
     fun navigateToHomeOrLaunchTarget() {
         val target = launchTarget
         if (target != null) {
+            pendingInviteCode = target.inviteCode
             navController.navigate(target.route) {
                 popUpTo("login") { inclusive = true }
                 launchSingleTop = true
@@ -90,6 +96,8 @@ fun CoupleCanvasNavHost(
         }
         composable("home") {
             HomeScreen(
+                initialJoinCode = pendingInviteCode,
+                onInviteConsumed = { pendingInviteCode = null },
                 onOpenRoom = { roomId -> navController.navigate("room/$roomId") },
                 onWaitRoom = { roomId -> navController.navigate("waiting/$roomId") },
                 onSignedOut = {

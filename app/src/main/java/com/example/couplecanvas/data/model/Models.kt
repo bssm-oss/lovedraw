@@ -84,15 +84,16 @@ data class Stroke(
     fun alpha(nowMillis: Long = System.currentTimeMillis()): Float {
         if (expiresAt <= 0L) return 1f
         val remaining = expiresAt - nowMillis
+        if (remaining >= LASER_FADE_MS) return 1f
         return (remaining.toFloat() / LASER_FADE_MS.toFloat()).coerceIn(0f, 1f)
     }
 
     companion object {
-        const val MARKER_RED = "#D9FF5A6D"
-        const val MARKER_BLUE = "#CC4A7CFF"
-        const val MARKER_BLACK = "#CC2A2926"
+        const val MARKER_RED = "#CFFF5A72"
+        const val MARKER_BLUE = "#BD4E7DFF"
+        const val MARKER_BLACK = "#A8272624"
         const val LASER_TTL_MS = 8_000L
-        const val LASER_FADE_MS = 900L
+        const val LASER_FADE_MS = 1_800L
     }
 }
 

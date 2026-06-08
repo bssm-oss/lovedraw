@@ -16,14 +16,14 @@ class AppLaunchTest {
     @Test
     fun appEntrySurfaceIsVisible() {
         composeRule.waitUntil(timeoutMillis = 8_000) {
-            hasText("lovedraw") || hasText("먼저 권한을 설정해요") || hasText("방 만들기")
+            hasText("lovedraw") || hasText("화면 위에 마음을 보내려면") || hasText("새 방 만들기")
         }
     }
 
     @Test
     fun entryScreenIsReadyForOAuthOrExistingSession() {
         composeRule.waitUntil(timeoutMillis = 8_000) {
-            hasText("Google로 시작하기") || hasText("권한 설정하기") || hasText("방 만들기")
+            hasText("Google로 시작하기") || hasText("권한 설정하기") || hasText("새 방 만들기")
         }
 
         if (hasText("Google로 시작하기")) {
@@ -41,10 +41,10 @@ class AppLaunchTest {
             composeRule.onNodeWithText("화면 위 그리기")
                 .assertIsDisplayed()
         } else {
-            composeRule.onNodeWithText("방 만들기")
+            composeRule.onNodeWithText("새 방 만들기")
                 .assertIsDisplayed()
                 .assertIsEnabled()
-            composeRule.onNodeWithText("코드로 입장")
+            composeRule.onNodeWithText("코드 입장")
                 .assertIsDisplayed()
                 .assertIsEnabled()
         }

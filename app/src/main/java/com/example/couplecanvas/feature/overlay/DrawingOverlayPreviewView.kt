@@ -97,11 +97,17 @@ object OverlayStrokeRenderer {
             if (stroke.isExpired(nowMillis)) return@forEach
             val points = stroke.sortedPoints()
             if (points.isEmpty()) return@forEach
-            val haloPaint = if (stroke.eraser) null else strokeHaloPaint(stroke.alpha(nowMillis))
-            val paint = strokePaint(stroke, stroke.alpha(nowMillis))
+            val alpha = stroke.alpha(nowMillis)
+            val haloPaint = if (stroke.eraser) null else strokeHaloPaint(stroke, alpha)
+            val markerUnderlayPaint = if (stroke.eraser) null else markerUnderlayPaint(stroke, alpha)
+            val paint = strokePaint(stroke, alpha)
             if (points.size == 1) {
                 val point = points.first()
                 haloPaint?.let {
+                    it.style = Paint.Style.FILL
+                    canvas.drawCircle(point.safeX() * width, point.safeY() * height, it.strokeWidth / 2f, it)
+                }
+                markerUnderlayPaint?.let {
                     it.style = Paint.Style.FILL
                     canvas.drawCircle(point.safeX() * width, point.safeY() * height, it.strokeWidth / 2f, it)
                 }
@@ -111,16 +117,26 @@ object OverlayStrokeRenderer {
             }
             val path = points.toPath(width, height)
             haloPaint?.let { canvas.drawPath(path, it) }
+            markerUnderlayPaint?.let { canvas.drawPath(path, it) }
             canvas.drawPath(path, paint)
         }
         canvas.restoreToCount(layer)
     }
 
-    private fun strokeHaloPaint(alpha: Float): Paint =
+    private fun strokeHaloPaint(stroke: Stroke, alpha: Float): Paint =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb((140 * alpha.coerceIn(0f, 1f)).roundToInt(), 255, 255, 255)
+            color = Color.argb((72 * alpha.coerceIn(0f, 1f)).roundToInt(), 255, 255, 255)
             style = Paint.Style.STROKE
-            strokeWidth = 14f
+            strokeWidth = stroke.width.coerceAtLeast(1f) + 12f
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+        }
+
+    private fun markerUnderlayPaint(stroke: Stroke, alpha: Float): Paint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = parseColor(stroke.color).withAlpha(alpha * 0.42f)
+            style = Paint.Style.STROKE
+            strokeWidth = stroke.width.coerceAtLeast(1f) * 1.55f
             strokeCap = Paint.Cap.ROUND
             strokeJoin = Paint.Join.ROUND
         }
@@ -139,14 +155,19 @@ object OverlayStrokeRenderer {
         val path = Path()
         val first = first()
         path.moveTo(first.safeX() * width, first.safeY() * height)
-        for (index in 1 until size) {
-            val previous = this[index - 1]
+        if (size == 2) {
+            val last = last()
+            path.lineTo(last.safeX() * width, last.safeY() * height)
+            return path
+        }
+        for (index in 1 until size - 1) {
             val current = this[index]
-            val previousX = previous.safeX() * width
-            val previousY = previous.safeY() * height
+            val next = this[index + 1]
             val currentX = current.safeX() * width
             val currentY = current.safeY() * height
-            path.quadTo(previousX, previousY, (previousX + currentX) / 2f, (previousY + currentY) / 2f)
+            val nextX = next.safeX() * width
+            val nextY = next.safeY() * height
+            path.quadTo(currentX, currentY, (currentX + nextX) / 2f, (currentY + nextY) / 2f)
         }
         val last = last()
         path.lineTo(last.safeX() * width, last.safeY() * height)

@@ -249,8 +249,8 @@ private fun StatusRow(
     val (label, color) = when {
         privacyMode -> "비공개 모드" to RauschPink
         !connected -> "재연결 중" to RauschPink
-        partnerOnline -> "상대방 온라인" to Mint
-        else -> "상대방 오프라인" to WarmGray
+        partnerOnline -> "연결됨" to Mint
+        else -> "상대 대기 중" to WarmGray
     }
     Row(
         modifier = Modifier

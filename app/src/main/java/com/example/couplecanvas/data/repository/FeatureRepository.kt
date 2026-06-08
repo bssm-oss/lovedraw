@@ -131,15 +131,22 @@ class FeatureRepository(private val firebase: FirebaseProvider) {
         require(uid in memberIds) { "이 방에 참여한 사용자만 투표할 수 있어요" }
 
         val planRef = firebase.root.child("rooms").child(roomId).child("datePlans").child(planId)
-        planRef.get().await().value ?: throw FeatureRepositoryException("데이트 플랜을 찾지 못했어요")
+        val initialRaw = planRef.get().await().value as? Map<*, *>
+            ?: throw FeatureRepositoryException("데이트 플랜을 찾지 못했어요")
         val now = System.currentTimeMillis()
         var failure: Throwable? = null
+        var usedInitialRaw = false
         val committed = suspendCancellableCoroutine<Boolean> { continuation ->
             planRef.runTransaction(object : Transaction.Handler {
                 override fun doTransaction(currentData: MutableData): Transaction.Result {
                     val raw = currentData.value as? Map<*, *> ?: run {
-                        failure = FeatureRepositoryException("데이트 플랜을 찾지 못했어요")
-                        return Transaction.abort()
+                        if (!usedInitialRaw) {
+                            usedInitialRaw = true
+                            initialRaw
+                        } else {
+                            failure = FeatureRepositoryException("데이트 플랜을 찾지 못했어요")
+                            return Transaction.abort()
+                        }
                     }
                     val updated = raw.entries.associate { it.key.toString() to it.value }.toMutableMap()
                     val votes = (raw["votes"] as? Map<*, *>)
@@ -300,15 +307,23 @@ class FeatureRepository(private val firebase: FirebaseProvider) {
             uploadImage(memoryImageUploadPath(roomId, uid, memory.memoryId), uri)
         }
         val memoryRef = firebase.root.child("rooms").child(roomId).child("memories").child(memory.memoryId)
+        val initialMemory = memoryRef.get().await().getValue(MemoryItem::class.java)
+            ?: throw FeatureRepositoryException("추억을 찾지 못했어요")
         val now = System.currentTimeMillis()
         var failure: Throwable? = null
         var updatedMemory: MemoryItem? = null
+        var usedInitialMemory = false
         val committed = suspendCancellableCoroutine<Boolean> { continuation ->
             memoryRef.runTransaction(object : Transaction.Handler {
                 override fun doTransaction(currentData: MutableData): Transaction.Result {
                     val currentMemory = currentData.getValue(MemoryItem::class.java) ?: run {
-                        failure = FeatureRepositoryException("추억을 찾지 못했어요")
-                        return Transaction.abort()
+                        if (!usedInitialMemory) {
+                            usedInitialMemory = true
+                            initialMemory
+                        } else {
+                            failure = FeatureRepositoryException("추억을 찾지 못했어요")
+                            return Transaction.abort()
+                        }
                     }
                     val remainingSlots = MAX_MEMORY_IMAGES - currentMemory.imageUrls.size
                     if (remainingSlots <= 0) {

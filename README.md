@@ -12,7 +12,7 @@
 - 화면 위에 직접 그리는 Android 오버레이 모드
 - 브러시 색상, 두께, 지우개, undo, clear
 - 일정 시간 뒤 사라지는 하이라이트/레이저 포인터형 스트로크
-- 카카오톡/인스타그램 등으로 방 코드 공유
+- 카카오톡/인스타그램 공유, QR 코드, 초대 링크
 - Firebase Storage 기반 이미지, 드로잉 스냅샷 저장
 - 러브노트, 추억, 데이트 플래너, 버킷리스트, 퀴즈, Daily Spark
 - Jetpack Glance 기반 홈 화면 위젯
@@ -54,6 +54,7 @@
 - `.env.example`
 - `.firebaserc.example`
 - `app/google-services.example.json`
+- `keystore.properties.example`
 
 ## 준비물
 
@@ -239,12 +240,27 @@ Firebase rules 검증 스크립트:
 앱은 커플 간 기록을 다루기 때문에 권한과 개인정보 노출을 보수적으로 처리합니다.
 
 - Google 로그인은 계정 식별과 기록 복구를 위해 사용합니다.
+- 알림 권한은 오버레이 그리기 시작/끄기/전체 지우기 액션에 사용합니다.
 - 화면 위 그리기 기능은 사용자가 직접 켠 경우에만 동작합니다.
+- lovedraw는 화면 내용을 캡처하거나 다른 앱 내용을 읽지 않습니다.
 - 위젯은 privacy mode가 켜져 있으면 민감한 문구와 이미지를 숨깁니다.
 - 위치 공유 기능은 기본값 OFF이며, 양쪽 동의가 있을 때만 거리 표시용으로 사용합니다.
 - 민감한 데이터는 로그에 남기지 않는 것을 원칙으로 합니다.
 
 권한/개인정보 정책 상세 문서는 [PRIVACY_AND_PERMISSIONS.md](./PRIVACY_AND_PERMISSIONS.md)를 확인하세요.
+
+스토어 제출용 개인정보 처리방침 초안은 [docs/privacy-policy-ko.md](./docs/privacy-policy-ko.md)에 있습니다.
+
+Google Play 제출 체크리스트는 [docs/play-console-release-checklist.md](./docs/play-console-release-checklist.md)에 있습니다.
+
+릴리스 서명은 `keystore.properties.example`을 `keystore.properties`로 복사한 뒤 로컬 비밀값을 채우거나, 같은 이름의 환경변수로 설정합니다. `keystore.properties`와 실제 keystore 파일은 커밋하지 않습니다.
+
+새 upload keystore가 필요하면 아래 스크립트를 사용할 수 있습니다.
+
+```bash
+./scripts/create_release_keystore.sh
+./gradlew :app:bundleRelease
+```
 
 ## 테스트 체크리스트
 
@@ -260,6 +276,8 @@ Firebase rules 검증 스크립트:
 - 하이라이트 스트로크 자동 사라짐
 - 오버레이 권한 안내와 실제 오버레이 드로잉
 - 카카오톡/인스타그램 공유 intent
+- QR 코드와 `lovedraw://invite?code=XXXXXX` 초대 링크
+- 초대 링크 클릭 후 자동 코드 입장
 - 위젯 privacy mode
 - 네트워크 끊김/재연결
 - Firebase Database Rules

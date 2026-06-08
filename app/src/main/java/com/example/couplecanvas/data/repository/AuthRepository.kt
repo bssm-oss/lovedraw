@@ -15,6 +15,7 @@ class AuthRepository(private val firebase: FirebaseProvider) {
         get() = firebase.auth.currentUser
 
     fun observeUser(): Flow<FirebaseUser?> = callbackFlow {
+        trySend(firebase.auth.currentUser)
         val listener = com.google.firebase.auth.FirebaseAuth.AuthStateListener { auth ->
             trySend(auth.currentUser)
         }

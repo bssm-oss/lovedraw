@@ -62,6 +62,7 @@ import com.example.couplecanvas.presentation.component.RoundedPastelButton
 import com.example.couplecanvas.presentation.component.SecondaryPastelButton
 import com.example.couplecanvas.presentation.navigation.LocalAppContainer
 import com.example.couplecanvas.presentation.navigation.ViewModelFactory
+import com.example.couplecanvas.presentation.theme.Mint
 import com.example.couplecanvas.presentation.theme.RauschPink
 import com.example.couplecanvas.presentation.theme.SunshineYellow
 import com.example.couplecanvas.presentation.theme.SunshineYellowDeep
@@ -69,6 +70,8 @@ import com.example.couplecanvas.presentation.theme.WarmBlack
 import com.example.couplecanvas.presentation.theme.WarmCanvas
 import com.example.couplecanvas.presentation.theme.WarmGray
 import com.example.couplecanvas.presentation.theme.WarmSurface
+import com.example.couplecanvas.util.ConnectionDisplayState
+import com.example.couplecanvas.util.connectionDisplayState
 import com.example.couplecanvas.util.StatsCalculator
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -77,7 +80,13 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 @Composable
-fun HomeScreen(onOpenRoom: (String) -> Unit, onWaitRoom: (String) -> Unit, onSignedOut: () -> Unit) {
+fun HomeScreen(
+    initialJoinCode: String? = null,
+    onInviteConsumed: () -> Unit = {},
+    onOpenRoom: (String) -> Unit,
+    onWaitRoom: (String) -> Unit,
+    onSignedOut: () -> Unit,
+) {
     val container = LocalAppContainer.current
     val viewModel: HomeViewModel = viewModel(
         factory = ViewModelFactory {
@@ -163,6 +172,13 @@ fun HomeScreen(onOpenRoom: (String) -> Unit, onWaitRoom: (String) -> Unit, onSig
         uiState.joinedRoomId?.let {
             viewModel.clearNavigation()
             onOpenRoom(it)
+        }
+    }
+    LaunchedEffect(initialJoinCode) {
+        val code = initialJoinCode?.trim()?.uppercase()?.takeIf { it.length == 6 }
+        if (code != null) {
+            viewModel.joinRoom(code)
+            onInviteConsumed()
         }
     }
     LaunchedEffect(feedback) {
@@ -254,6 +270,7 @@ fun HomeScreen(onOpenRoom: (String) -> Unit, onWaitRoom: (String) -> Unit, onSig
                     items(activeSummaries, key = { it.room.roomId }) { summary ->
                         RoomRow(
                             summary = summary,
+                            isFirebaseConnected = uiState.isFirebaseConnected,
                             isBusy = uiState.isBusy,
                             onOpen = {
                                 if (summary.room.status == RoomStatus.Waiting.value) onWaitRoom(summary.room.roomId)
@@ -273,6 +290,7 @@ fun HomeScreen(onOpenRoom: (String) -> Unit, onWaitRoom: (String) -> Unit, onSig
                     items(archivedSummaries, key = { it.room.roomId }) { summary ->
                         RoomRow(
                             summary = summary,
+                            isFirebaseConnected = uiState.isFirebaseConnected,
                             isBusy = uiState.isBusy,
                             onOpen = { onOpenRoom(summary.room.roomId) },
                             onWait = { onWaitRoom(summary.room.roomId) },
@@ -322,9 +340,11 @@ private fun HomeHeader(displayName: String, connected: Boolean, onSignOut: () ->
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (!connected) {
-                Text("재연결 중", style = MaterialTheme.typography.bodySmall, color = RauschPink)
-            }
+            Text(
+                if (connected) "연결됨" else "재연결 중",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (connected) Mint else RauschPink,
+            )
         }
         IconButton(onClick = onSignOut) {
             Icon(Icons.AutoMirrored.Rounded.ExitToApp, contentDescription = "로그아웃", tint = WarmGray)
@@ -335,6 +355,7 @@ private fun HomeHeader(displayName: String, connected: Boolean, onSignOut: () ->
 @Composable
 private fun RoomRow(
     summary: RoomHomeSummary,
+    isFirebaseConnected: Boolean,
     isBusy: Boolean,
     onOpen: () -> Unit,
     onWait: () -> Unit,
@@ -345,20 +366,8 @@ private fun RoomRow(
     val room = summary.room
     val daysTogether = StatsCalculator.daysTogether(room.startedAt)
     val isClosed = room.status == RoomStatus.Closed.value
-    val memberCount = room.members.count { it.value }
     var showMenu by remember { mutableStateOf(false) }
-
-    val statusLabel = when {
-        isClosed -> "보관됨"
-        room.status == RoomStatus.Waiting.value -> "대기 중"
-        memberCount >= 2 -> "활성"
-        else -> "준비 중"
-    }
-    val statusColor = when {
-        isClosed -> WarmGray
-        memberCount >= 2 -> SunshineYellowDeep
-        else -> WarmGray
-    }
+    val status = room.connectionDisplayState(isFirebaseConnected)
 
     Box {
         Card(
@@ -394,20 +403,7 @@ private fun RoomRow(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Box(
-                    modifier = Modifier
-                        .background(
-                            color = if (isClosed) WarmCanvas else SunshineYellow.copy(alpha = if (memberCount >= 2) 1f else 0.3f),
-                            shape = RoundedCornerShape(10.dp),
-                        )
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                ) {
-                    Text(
-                        statusLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = statusColor,
-                    )
-                }
+                ConnectionStatusPill(status)
                 IconButton(onClick = { showMenu = true }) {
                     Icon(Icons.Rounded.MoreVert, contentDescription = "옵션", tint = WarmGray)
                 }
@@ -436,6 +432,29 @@ private fun RoomRow(
                 onClick = { showMenu = false; onLeave() },
             )
         }
+    }
+}
+
+@Composable
+private fun ConnectionStatusPill(status: ConnectionDisplayState) {
+    val background = when (status) {
+        ConnectionDisplayState.Connected -> Mint.copy(alpha = 0.26f)
+        ConnectionDisplayState.Waiting -> SunshineYellow.copy(alpha = 0.38f)
+        ConnectionDisplayState.Reconnecting -> RauschPink.copy(alpha = 0.12f)
+        ConnectionDisplayState.Archived -> WarmCanvas
+    }
+    val content = when (status) {
+        ConnectionDisplayState.Connected -> Mint
+        ConnectionDisplayState.Waiting -> SunshineYellowDeep
+        ConnectionDisplayState.Reconnecting -> RauschPink
+        ConnectionDisplayState.Archived -> WarmGray
+    }
+    Box(
+        modifier = Modifier
+            .background(background, RoundedCornerShape(999.dp))
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    ) {
+        Text(status.label, style = MaterialTheme.typography.labelMedium, color = content)
     }
 }
 

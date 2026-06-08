@@ -1,5 +1,6 @@
 package com.example.couplecanvas.data.repository
 
+import com.example.couplecanvas.BuildConfig
 import com.example.couplecanvas.data.firebase.FirebaseProvider
 import com.example.couplecanvas.data.model.JoinRoomResult
 import com.example.couplecanvas.data.model.LoveNote
@@ -221,6 +222,7 @@ class RoomRepository(private val firebase: FirebaseProvider) {
 
     fun observeRoomSummariesForUser(uid: String): Flow<List<RoomHomeSummary>> =
         callbackFlow {
+            trySend(emptyList())
             val userRoomsRef = firebase.root.child("userRooms").child(uid)
             val roomListeners = mutableMapOf<String, Pair<DatabaseReference, ValueEventListener>>()
             var latestUserRoomsSnapshot: DataSnapshot? = null
@@ -406,7 +408,13 @@ class RoomRepository(private val firebase: FirebaseProvider) {
 
     private suspend fun awaitAuthenticatedUid(uid: String) {
         val currentUser = firebase.auth.currentUser
-            ?: error("로그인이 필요해요")
+        if (currentUser == null) {
+            check(BuildConfig.DEBUG && BuildConfig.USE_FIREBASE_EMULATORS) {
+                "로그인이 필요해요"
+            }
+            awaitDatabaseConnection()
+            return
+        }
         require(currentUser.uid == uid) { "현재 로그인한 계정과 요청한 사용자가 달라요" }
         currentUser.getIdToken(false).await()
         awaitDatabaseConnection()

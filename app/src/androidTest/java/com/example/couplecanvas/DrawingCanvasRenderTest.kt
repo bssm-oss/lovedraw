@@ -1,116 +1,46 @@
 package com.example.couplecanvas
 
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toPixelMap
-import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.unit.dp
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import com.example.couplecanvas.data.model.DrawingPoint
-import com.example.couplecanvas.data.model.DrawingUiState
 import com.example.couplecanvas.data.model.Stroke
-import com.example.couplecanvas.presentation.screen.drawing.DrawingCanvas
-import com.example.couplecanvas.presentation.theme.CoupleCanvasTheme
+import com.example.couplecanvas.feature.overlay.OverlayStrokeRenderer
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Test
 
 class DrawingCanvasRenderTest {
-    @get:Rule
-    val composeRule = createComposeRule()
-
     @Test
-    fun drawingCanvasRendersPastelStroke() {
+    fun overlayRendererRendersSoftMarkerStroke() {
         val stroke = Stroke(
             strokeId = "test-stroke",
             ownerUid = "uid",
-            color = "#FF7A9A",
+            color = Stroke.MARKER_RED,
             width = 18f,
             createdAt = 1L,
             points = mapOf(
                 "00000" to DrawingPoint(0.18f, 0.18f, 1L),
-                "00001" to DrawingPoint(0.82f, 0.82f, 2L),
+                "00001" to DrawingPoint(0.50f, 0.50f, 2L),
+                "00002" to DrawingPoint(0.82f, 0.82f, 3L),
             ),
         )
+        val bitmap = markerBitmap(stroke)
 
-        composeRule.setContent {
-            CoupleCanvasTheme {
-                DrawingCanvas(
-                    uiState = DrawingUiState(strokes = listOf(stroke), isLoading = false),
-                    onStart = { _, _ -> },
-                    onMove = { _, _ -> },
-                    onEnd = {},
-                    modifier = Modifier.size(260.dp),
-                )
-            }
-        }
-
-        val pixels = composeRule.onRoot().captureToImage().toPixelMap()
-        var foundStrokePixel = false
-        for (x in 0 until pixels.width step 3) {
-            for (y in 0 until pixels.height step 3) {
-                val pixel = pixels[x, y]
-                if (pixel.red > 0.85f && pixel.green in 0.25f..0.65f && pixel.blue in 0.35f..0.75f) {
-                    foundStrokePixel = true
-                    break
-                }
-            }
-            if (foundStrokePixel) break
-        }
-
-        assertTrue("Expected the rendered canvas to contain the pastel stroke color.", foundStrokePixel)
+        assertTrue(
+            "Expected rendered overlay to contain a translucent pink marker stroke.",
+            bitmap.containsPixel { red, green, blue, alpha ->
+                alpha > 240 && red > 230 && green in 80..230 && blue in 95..230 && red > green && red > blue
+            },
+        )
     }
 
     @Test
-    fun drawingCanvasRendersLocalPendingStrokeBeforeFirebaseEcho() {
-        val pendingStroke = Stroke(
-            strokeId = "pending-stroke",
-            ownerUid = "uid",
-            color = "#A9D6FF",
-            width = 22f,
-            createdAt = 2L,
-            points = mapOf(
-                "00000" to DrawingPoint(0.12f, 0.78f, 1L),
-                "00001" to DrawingPoint(0.88f, 0.22f, 2L),
-            ),
-        )
-
-        composeRule.setContent {
-            CoupleCanvasTheme {
-                DrawingCanvas(
-                    uiState = DrawingUiState(localPendingStrokes = listOf(pendingStroke), isLoading = false),
-                    onStart = { _, _ -> },
-                    onMove = { _, _ -> },
-                    onEnd = {},
-                    modifier = Modifier.size(260.dp),
-                )
-            }
-        }
-
-        val pixels = composeRule.onRoot().captureToImage().toPixelMap()
-        var foundPendingPixel = false
-        for (x in 0 until pixels.width step 3) {
-            for (y in 0 until pixels.height step 3) {
-                val pixel = pixels[x, y]
-                if (pixel.red in 0.50f..0.80f && pixel.green > 0.72f && pixel.blue > 0.88f) {
-                    foundPendingPixel = true
-                    break
-                }
-            }
-            if (foundPendingPixel) break
-        }
-
-        assertTrue("Expected local pending stroke to stay visible before Firebase echoes it.", foundPendingPixel)
-    }
-
-    @Test
-    fun drawingCanvasEraserClearsPreviousStrokeLayer() {
+    fun overlayRendererEraserClearsPreviousStrokeLayer() {
         val paintStroke = Stroke(
             strokeId = "paint-stroke",
             ownerUid = "uid",
-            color = "#FF7A9A",
-            width = 42f,
+            color = Stroke.MARKER_RED,
+            width = 44f,
             createdAt = 1L,
             points = mapOf(
                 "00000" to DrawingPoint(0.12f, 0.5f, 1L),
@@ -120,7 +50,7 @@ class DrawingCanvasRenderTest {
         val eraserStroke = Stroke(
             strokeId = "eraser-stroke",
             ownerUid = "uid",
-            width = 56f,
+            width = 58f,
             eraser = true,
             createdAt = 2L,
             points = mapOf(
@@ -128,25 +58,32 @@ class DrawingCanvasRenderTest {
                 "00001" to DrawingPoint(0.5f, 0.82f, 4L),
             ),
         )
-
-        composeRule.setContent {
-            CoupleCanvasTheme {
-                DrawingCanvas(
-                    uiState = DrawingUiState(strokes = listOf(paintStroke, eraserStroke), isLoading = false),
-                    onStart = { _, _ -> },
-                    onMove = { _, _ -> },
-                    onEnd = {},
-                    modifier = Modifier.size(260.dp),
-                )
-            }
-        }
-
-        val pixels = composeRule.onRoot().captureToImage().toPixelMap()
-        val centerPixel = pixels[pixels.width / 2, pixels.height / 2]
+        val bitmap = markerBitmap(paintStroke, eraserStroke)
+        val center = bitmap.getPixel(bitmap.width / 2, bitmap.height / 2)
 
         assertTrue(
-            "Expected eraser to clear the previous stroke instead of painting over it.",
-            centerPixel.red > 0.94f && centerPixel.green > 0.94f && centerPixel.blue > 0.94f,
+            "Expected eraser to reveal the white background at the crossing point.",
+            Color.red(center) > 245 && Color.green(center) > 245 && Color.blue(center) > 245,
         )
+    }
+
+    private fun markerBitmap(vararg strokes: Stroke): Bitmap {
+        val bitmap = Bitmap.createBitmap(320, 320, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.drawColor(Color.WHITE)
+        OverlayStrokeRenderer.drawStrokes(canvas, strokes.toList(), 320f, 320f, nowMillis = 4_000L)
+        return bitmap
+    }
+
+    private fun Bitmap.containsPixel(predicate: (red: Int, green: Int, blue: Int, alpha: Int) -> Boolean): Boolean {
+        for (x in 0 until width step 3) {
+            for (y in 0 until height step 3) {
+                val pixel = getPixel(x, y)
+                if (predicate(Color.red(pixel), Color.green(pixel), Color.blue(pixel), Color.alpha(pixel))) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 }

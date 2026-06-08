@@ -27,6 +27,7 @@ import androidx.compose.material.icons.rounded.Brush
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -174,27 +175,28 @@ fun PermissionOnboardingScreen(onReady: () -> Unit) {
             PermissionCard(
                 icon = Icons.Rounded.Notifications,
                 title = "알림",
-                body = "앱을 나가도 낙서 연결을 유지해요",
+                body = "그리기 시작, 끄기, 전체 지우기를 알림에서 바로 조작해요.",
                 granted = notificationGranted,
                 required = true,
             )
             PermissionCard(
                 icon = Icons.Rounded.Brush,
                 title = "화면 위 그리기",
-                body = "홈 화면과 다른 앱 위에 바로 그려요",
+                body = "상대에게 낙서를 보내려면 지금 보는 화면 위에 선을 띄울 수 있어야 해요.",
                 granted = overlayGranted,
                 required = true,
             )
             PermissionCard(
                 icon = Icons.Rounded.LocationOn,
                 title = "위치",
-                body = "거리 위젯을 켤 때만 1회 공유해요",
+                body = "거리 위젯을 직접 켤 때만 사용해요. 기본값은 꺼짐이에요.",
                 granted = locationGranted,
                 required = false,
                 trailing = {
                     Switch(checked = includeLocation, onCheckedChange = { includeLocation = it })
                 },
             )
+            SafetyNoteCard()
             Spacer(Modifier.height(6.dp))
             RoundedPastelButton(
                 text = if (pendingFlow) "확인 중..." else "권한 설정하기",
@@ -252,15 +254,47 @@ private fun Header() {
         ) {
             BrandIconTile(Modifier.size(64.dp))
             Text(
-                "먼저 권한을 설정해요",
+                "화면 위에 마음을 보내려면",
                 style = MaterialTheme.typography.headlineMedium,
                 color = WarmBlack,
             )
             Text(
-                "화면 밖에서도 서로의 낙서를 바로 보려면 필수예요",
+                "상대에게 낙서를 보내려면 알림과 화면 위 그리기 권한이 필요해요. lovedraw는 화면 내용을 읽거나 몰래 저장하지 않아요.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = WarmGray,
             )
+        }
+    }
+}
+
+@Composable
+private fun SafetyNoteCard() {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = WarmSurfaceAlt),
+        shape = RoundedCornerShape(22.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(SunshineYellow.copy(alpha = 0.5f), CircleShape)
+                    .border(1.dp, Sand, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Rounded.Security, contentDescription = null, tint = WarmBlack)
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("권한은 이 기능에만 사용해요", style = MaterialTheme.typography.titleSmall, color = WarmBlack)
+                Text("화면 캡처 없음 · 몰래 위치 추적 없음 · 언제든 설정에서 끌 수 있음", style = MaterialTheme.typography.bodyMedium, color = WarmGray)
+            }
         }
     }
 }

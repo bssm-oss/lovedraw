@@ -12,6 +12,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -39,7 +41,9 @@ import androidx.compose.material.icons.automirrored.rounded.Chat
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.PhotoAlbum
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -83,6 +87,7 @@ import com.example.couplecanvas.data.model.QuizQuestion
 import com.example.couplecanvas.presentation.component.CuteTopBar
 import com.example.couplecanvas.presentation.component.EmptyState
 import com.example.couplecanvas.presentation.component.FilterChipLike
+import com.example.couplecanvas.presentation.component.InviteShareDialog
 import com.example.couplecanvas.presentation.component.RoundedPastelButton
 import com.example.couplecanvas.presentation.component.SecondaryPastelButton
 import com.example.couplecanvas.presentation.component.SectionTitle
@@ -91,14 +96,20 @@ import com.example.couplecanvas.presentation.navigation.LocalAppContainer
 import com.example.couplecanvas.presentation.navigation.ViewModelFactory
 import com.example.couplecanvas.presentation.screen.drawing.DrawingScreen
 import com.example.couplecanvas.presentation.theme.RauschPink
+import com.example.couplecanvas.presentation.theme.Mint
+import com.example.couplecanvas.presentation.theme.Sand
 import com.example.couplecanvas.presentation.theme.SunshineYellow
+import com.example.couplecanvas.presentation.theme.SunshineYellowDeep
+import com.example.couplecanvas.presentation.theme.WarmBlack
 import com.example.couplecanvas.presentation.theme.WarmCanvas
 import com.example.couplecanvas.presentation.theme.WarmGray
 import com.example.couplecanvas.presentation.theme.WarmSurface
+import com.example.couplecanvas.util.ConnectionDisplayState
 import com.example.couplecanvas.util.DateIdeaGenerator
 import com.example.couplecanvas.util.DatePlanMatcher
 import com.example.couplecanvas.util.ShareCardGenerator
 import com.example.couplecanvas.util.StatsCalculator
+import com.example.couplecanvas.util.connectionDisplayState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -124,8 +135,10 @@ fun RoomDashboardScreen(roomId: String, initialTab: Int = 0, onBack: () -> Unit)
     var selectedNavItem by remember(roomId, initialTab) { mutableIntStateOf(if (initialTab <= 3) initialTab else 4) }
     var selectedMoreSubTab by remember(roomId, initialTab) { mutableIntStateOf((initialTab - 4).coerceAtLeast(0)) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     val room = uiState.room
     val feedback = uiState.error ?: uiState.message
+    var showInviteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(feedback) {
         if (feedback != null) {
@@ -157,10 +170,27 @@ fun RoomDashboardScreen(roomId: String, initialTab: Int = 0, onBack: () -> Unit)
             CuteTopBar(
                 title = room?.title ?: "그림방",
                 subtitle = room?.roomCode?.let {
-                    if (uiState.isFirebaseConnected) "코드 $it" else "코드 $it · 재연결 중"
+                    "코드 $it"
                 },
                 onBack = onBack,
+                action = {
+                    if (!room?.roomCode.isNullOrBlank()) {
+                        IconButton(
+                            onClick = { showInviteDialog = true },
+                            modifier = Modifier.background(WarmSurface, RoundedCornerShape(16.dp)),
+                        ) {
+                            Icon(Icons.Rounded.Share, contentDescription = "초대하기", tint = WarmBlack)
+                        }
+                    }
+                },
             )
+            room?.let {
+                RoomConnectionBanner(
+                    status = it.connectionDisplayState(uiState.isFirebaseConnected),
+                    roomCode = it.roomCode,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                )
+            }
             when (selectedNavItem) {
                 0 -> DrawingScreen(
                     roomId = roomId,
@@ -179,6 +209,45 @@ fun RoomDashboardScreen(roomId: String, initialTab: Int = 0, onBack: () -> Unit)
                 )
             }
         }
+    }
+
+    if (showInviteDialog && room != null) {
+        InviteShareDialog(
+            roomCode = room.roomCode,
+            roomTitle = room.title,
+            onDismiss = { showInviteDialog = false },
+            onMessage = { message -> coroutineScope.launch { snackbarHostState.showSnackbar(message) } },
+        )
+    }
+}
+
+@Composable
+private fun RoomConnectionBanner(status: ConnectionDisplayState, roomCode: String, modifier: Modifier = Modifier) {
+    val accent = when (status) {
+        ConnectionDisplayState.Connected -> Mint
+        ConnectionDisplayState.Waiting -> SunshineYellowDeep
+        ConnectionDisplayState.Reconnecting -> RauschPink
+        ConnectionDisplayState.Archived -> WarmGray
+    }
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(WarmSurface, RoundedCornerShape(18.dp))
+            .border(1.dp, Sand, RoundedCornerShape(18.dp))
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(9.dp)
+                .background(accent, RoundedCornerShape(999.dp)),
+        )
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(status.label, style = MaterialTheme.typography.labelLarge, color = WarmBlack)
+            Text(status.description, style = MaterialTheme.typography.bodySmall, color = WarmGray)
+        }
+        Text(roomCode, style = MaterialTheme.typography.labelLarge, color = accent)
     }
 }
 
@@ -1607,9 +1676,13 @@ private fun StatsTab(uiState: RoomFeatureUiState, viewModel: RoomFeatureViewMode
                 if (!uiState.isFirebaseConnected) {
                     Text("재연결 중", color = RauschPink)
                 }
-                Text("사진: 선택한 것만", color = WarmGray)
-                Text("위치: 1회 공유", color = WarmGray)
-                Text("광고/분석 없음", color = WarmGray)
+                Text("화면 위 그리기: 사용자가 켠 동안만 낙서 오버레이를 보여줘요.", color = WarmGray)
+                Text("화면 캡처 없음: 다른 앱 화면이나 입력 내용을 읽지 않아요.", color = WarmGray)
+                Text("알림: 그리기 시작, 끄기, 전체 지우기 조작에만 사용해요.", color = WarmGray)
+                Text("사진: 사용자가 직접 선택한 이미지만 저장해요.", color = WarmGray)
+                Text("위치: 양쪽 동의 후 버튼을 눌렀을 때만 1회 공유해요.", color = WarmGray)
+                Text("초대: QR과 링크는 사용자가 직접 보낸 상대에게만 전달돼요.", color = WarmGray)
+                Text("광고/분석 SDK 없음", color = WarmGray)
             }
         }
     }

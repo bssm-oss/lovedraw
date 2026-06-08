@@ -14,6 +14,13 @@ val localProperties = Properties().apply {
     }
 }
 
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.isFile) {
+        file.inputStream().use { load(it) }
+    }
+}
+
 fun env(name: String): String? = System.getenv(name)?.takeIf { it.isNotBlank() }
 
 fun setting(name: String, defaultValue: String): String =
@@ -22,7 +29,23 @@ fun setting(name: String, defaultValue: String): String =
         ?: env(name)
         ?: defaultValue
 
+fun secretSetting(name: String): String? =
+    providers.gradleProperty(name).orNull
+        ?: keystoreProperties.getProperty(name)
+        ?: env(name)
+
 fun String.asBuildConfigString(): String = "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
+val releaseStoreFilePath = secretSetting("LOVEDRAW_RELEASE_STORE_FILE")
+val releaseStorePassword = secretSetting("LOVEDRAW_RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = secretSetting("LOVEDRAW_RELEASE_KEY_ALIAS")
+val releaseKeyPassword = secretSetting("LOVEDRAW_RELEASE_KEY_PASSWORD")
+val hasReleaseSigningConfig = listOf(
+    releaseStoreFilePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).all { !it.isNullOrBlank() } && releaseStoreFilePath?.let { rootProject.file(it).isFile } == true
 
 android {
     namespace = "com.example.couplecanvas"
@@ -49,6 +72,17 @@ android {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
     }
 
+    if (hasReleaseSigningConfig) {
+        signingConfigs {
+            create("release") {
+                storeFile = rootProject.file(requireNotNull(releaseStoreFilePath))
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             buildConfigField("boolean", "USE_FIREBASE_EMULATORS", setting("COUPLE_CANVAS_USE_FIREBASE_EMULATORS", "false"))
@@ -56,6 +90,9 @@ android {
         }
         release {
             isMinifyEnabled = true
+            if (hasReleaseSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -108,6 +145,7 @@ dependencies {
     implementation(libs.firebase.storage)
     implementation(libs.googleid)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.zxing.core)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
