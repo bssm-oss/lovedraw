@@ -47,6 +47,7 @@ val accountDeletionUrl = setting("LOVEDRAW_ACCOUNT_DELETION_URL", "")
 val supportEmail = setting("LOVEDRAW_SUPPORT_EMAIL", "")
 val operatorName = setting("LOVEDRAW_OPERATOR_NAME", "")
 val policyEffectiveDate = setting("LOVEDRAW_POLICY_EFFECTIVE_DATE", "")
+val deletionProcessingPeriod = setting("LOVEDRAW_DELETION_PROCESSING_PERIOD", "")
 val hasReleaseSigningConfig = listOf(
     releaseStoreFilePath,
     releaseStorePassword,
@@ -235,6 +236,10 @@ tasks.register("verifyReleaseReadiness") {
         requireReady(
             policyEffectiveDate.isConfiguredIsoDate(),
             "Set LOVEDRAW_POLICY_EFFECTIVE_DATE to the privacy policy effective date in YYYY-MM-DD format.",
+        )
+        requireReady(
+            deletionProcessingPeriod.isConfiguredReleaseText(),
+            "Set LOVEDRAW_DELETION_PROCESSING_PERIOD to the public expected account/data deletion processing period.",
         )
         requireReady(
             hasReleaseSigningConfig,

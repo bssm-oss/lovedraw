@@ -29,6 +29,16 @@ jobs:
       - name: Check sensitive files
         run: ./scripts/check_sensitive_files.sh
 
+      - name: Render legal docs from release metadata
+        env:
+          LOVEDRAW_PRIVACY_POLICY_URL: https://lovedraw.app/privacy
+          LOVEDRAW_ACCOUNT_DELETION_URL: https://lovedraw.app/delete-account
+          LOVEDRAW_SUPPORT_EMAIL: support@lovedraw.app
+          LOVEDRAW_OPERATOR_NAME: lovedraw
+          LOVEDRAW_POLICY_EFFECTIVE_DATE: "2026-06-08"
+          LOVEDRAW_DELETION_PROCESSING_PERIOD: 30일
+        run: ./scripts/render_release_legal_docs.sh
+
       - name: Prepare CI Firebase config
         run: cp app/google-services.example.json app/google-services.json
 

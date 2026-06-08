@@ -133,7 +133,19 @@ Firebase Console에서 켜야 하는 기능:
    LOVEDRAW_SUPPORT_EMAIL=support@your-domain.example
    LOVEDRAW_OPERATOR_NAME=your-public-operator-name
    LOVEDRAW_POLICY_EFFECTIVE_DATE=2026-06-08
+   LOVEDRAW_DELETION_PROCESSING_PERIOD=30일
    ```
+
+   공개 웹페이지에 올릴 개인정보처리방침과 계정/데이터 삭제 안내 파일은 아래 명령으로 생성합니다.
+
+   ```bash
+   ./scripts/render_release_legal_docs.sh
+   ```
+
+   생성 위치:
+
+   - `build/release-legal/privacy-policy-ko.md`
+   - `build/release-legal/account-data-deletion-page-ko.md`
 
 8. Google 로그인을 설정합니다.
 

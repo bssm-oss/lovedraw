@@ -58,6 +58,7 @@ release signing 값이 없으면 debug/release 검증 빌드는 가능하지만 
 
 - [docs/privacy-policy-ko.md](./privacy-policy-ko.md)를 실제 운영자 정보로 수정한다.
 - [docs/account-data-deletion-page-ko.md](./account-data-deletion-page-ko.md)를 실제 운영자 정보로 수정한다.
+- `./scripts/render_release_legal_docs.sh`로 공개 게시용 문서를 생성한다.
 - 공개 URL에 게시한다.
 - Play Console App content > Privacy policy에 같은 URL을 등록한다.
 - Play Console Data safety > Data deletion에 계정/데이터 삭제 URL을 등록한다.
@@ -69,6 +70,7 @@ release signing 값이 없으면 debug/release 검증 빌드는 가능하지만 
 - 문의 이메일
 - 개인정보 처리방침 시행일
 - 데이터 삭제 요청 방법
+- 데이터 삭제 요청 처리 기간
 
 앱 설정 화면에서 열릴 운영 링크도 `local.properties`, Gradle property, CI 환경변수 중 하나로 설정한다.
 
@@ -78,9 +80,16 @@ LOVEDRAW_ACCOUNT_DELETION_URL=https://your-domain.example/delete-account
 LOVEDRAW_SUPPORT_EMAIL=support@your-domain.example
 LOVEDRAW_OPERATOR_NAME=your-public-operator-name
 LOVEDRAW_POLICY_EFFECTIVE_DATE=2026-06-08
+LOVEDRAW_DELETION_PROCESSING_PERIOD=30일
 ```
 
 이 값이 비어 있으면 앱 설정 화면에서 해당 버튼이 비활성화되고, `:app:verifyReleaseReadiness`가 실패한다.
+
+공개 게시용 문서 생성:
+
+```bash
+./scripts/render_release_legal_docs.sh
+```
 
 ## 4. Play Console Data safety
 

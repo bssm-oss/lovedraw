@@ -1,8 +1,8 @@
-# lovedraw 개인정보 처리방침 초안
+# lovedraw 개인정보 처리방침
 
-시행일: `LOVEDRAW_POLICY_EFFECTIVE_DATE` 값으로 확정
+시행일: `LOVEDRAW_POLICY_EFFECTIVE_DATE`
 
-이 문서는 lovedraw Android 앱의 개인정보 처리 기준을 설명합니다. 실제 배포 전에는 앱 운영자명(`LOVEDRAW_OPERATOR_NAME`), 연락처(`LOVEDRAW_SUPPORT_EMAIL`), 개인정보 처리방침 URL(`LOVEDRAW_PRIVACY_POLICY_URL`), Google Play Console Data safety 답변과 내용이 일치하도록 최종 검토해야 합니다.
+이 문서는 lovedraw Android 앱의 개인정보 처리 기준을 설명합니다.
 
 ## 1. 수집하는 정보
 
