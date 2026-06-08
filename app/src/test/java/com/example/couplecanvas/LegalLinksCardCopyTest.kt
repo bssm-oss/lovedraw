@@ -20,6 +20,7 @@ class LegalLinksCardCopyTest {
         assertTrue(combined.contains("개인정보"))
         assertTrue(combined.contains("삭제"))
         assertTrue(combined.contains("문의"))
+        assertTrue(combined.contains("계정 삭제 요청"))
     }
 
     @Test
