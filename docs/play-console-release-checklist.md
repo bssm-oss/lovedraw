@@ -57,6 +57,7 @@ release signing 값이 없으면 debug/release 검증 빌드는 가능하지만 
 
 앱의 실제 동작 기준으로 작성한다.
 
+- 상세 답변 초안은 [docs/play-console-data-safety-ko.md](./play-console-data-safety-ko.md)를 기준으로 작성한다.
 - Account info: Firebase uid, Google 표시 이름, 이메일, 프로필 사진 URL
 - User-generated content: 낙서, 러브노트, 데이트 플랜, 버킷, 퀴즈 답변, Daily Spark, 추억 메모
 - Photos and videos: 사용자가 Photo Picker로 직접 선택한 이미지
@@ -67,6 +68,8 @@ release signing 값이 없으면 debug/release 검증 빌드는 가능하지만 
 ## 5. Foreground Service 및 권한 선언
 
 Play Console App content에서 foreground service special use를 설명한다.
+
+상세 선언 초안은 [docs/foreground-service-special-use-ko.md](./foreground-service-special-use-ko.md)를 기준으로 작성한다.
 
 권장 설명:
 

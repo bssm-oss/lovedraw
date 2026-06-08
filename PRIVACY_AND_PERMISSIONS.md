@@ -6,6 +6,8 @@
 
 Google Play 제출 전 외부 작업은 [docs/play-console-release-checklist.md](./docs/play-console-release-checklist.md)를 기준으로 확인한다.
 
+Play Console Data safety 답변 초안은 [docs/play-console-data-safety-ko.md](./docs/play-console-data-safety-ko.md), foreground service special use 선언 초안은 [docs/foreground-service-special-use-ko.md](./docs/foreground-service-special-use-ko.md)에 둔다.
+
 ## 기본 원칙
 
 - 로그인은 Google OAuth 기반 Firebase Auth로 처리한다.
