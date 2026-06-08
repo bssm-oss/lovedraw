@@ -179,6 +179,14 @@ Firebase Console에서 켜야 하는 기능:
 
     이 태스크는 운영 Firebase URL, 공개 개인정보처리방침 URL, 계정/데이터 삭제 URL, 문의 이메일, release signing, 로컬 `app/google-services.json` 존재 여부를 확인합니다. Play Console 입력값과 Firebase Console의 release SHA 등록은 콘솔에서 별도로 확인해야 합니다.
 
+12. 민감 파일이 Git에 올라가지 않았는지 확인합니다.
+
+    ```bash
+    ./scripts/check_sensitive_files.sh
+    ```
+
+    이 스크립트는 `.env`, `google-services.json`, keystore, service account, Firebase debug log 같은 파일이 Git에 추적되는지 확인합니다. GitHub Actions도 같은 검사를 실행합니다.
+
 ## Firebase Emulator로 계정 없이 테스트하기
 
 실제 Google 계정 선택 플로우 없이 빠르게 테스트하려면 Firebase Emulator 모드를 사용합니다.
