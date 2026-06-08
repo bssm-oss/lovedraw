@@ -1,16 +1,16 @@
 package com.example.couplecanvas.util
 
 object PermissionOnboardingCopy {
-    const val HEADER_TITLE = "화면 위에 마음을 보내려면"
-    const val HEADER_BODY = "상대에게 낙서를 보내려면 알림과 화면 위 그리기 권한이 필요해요. lovedraw는 화면 내용을 읽거나 몰래 저장하지 않아요."
+    const val HEADER_TITLE = "상대에게 낙서를 보내려면"
+    const val HEADER_BODY = "처음 한 번만 권한을 설정해 주세요. 알림은 그리기 시작과 끄기에, 다른 앱 위에 표시 권한은 지금 보는 화면 위에 선을 띄우는 데 사용해요."
 
     const val NOTIFICATION_TITLE = "알림"
     const val NOTIFICATION_BODY = "그리기 시작, 끄기, 전체 지우기를 알림에서 바로 조작해요."
     const val NOTIFICATION_DENIED = "알림 권한을 허용해주세요"
 
-    const val OVERLAY_TITLE = "화면 위 그리기"
-    const val OVERLAY_BODY = "상대에게 낙서를 보내려면 지금 보는 화면 위에 선을 띄울 수 있어야 해요."
-    const val OVERLAY_DENIED = "화면 위 그리기를 허용해주세요"
+    const val OVERLAY_TITLE = "다른 앱 위에 표시"
+    const val OVERLAY_BODY = "상대에게 낙서를 보내려면 화면 위 그리기 권한이 필요해요. lovedraw는 화면 내용을 읽거나 저장하지 않아요."
+    const val OVERLAY_DENIED = "다른 앱 위에 표시를 허용해주세요"
 
     const val LOCATION_TITLE = "위치"
     const val LOCATION_BODY = "거리 위젯을 직접 켤 때만 사용해요. 기본값은 꺼짐이에요."

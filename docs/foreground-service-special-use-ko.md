@@ -23,13 +23,25 @@ lovedraw uses a user-enabled foreground service to show a drawing overlay over o
 
 1. 사용자가 Google 계정으로 로그인한다.
 2. 사용자가 방을 만들거나 초대 코드/링크/QR로 방에 입장한다.
-3. 앱이 알림 권한과 다른 앱 위 표시 권한이 필요한 이유를 먼저 설명한다.
+3. 앱이 알림 권한과 `다른 앱 위에 표시` 권한이 필요한 이유를 먼저 설명한다.
 4. 사용자가 권한을 허용한다.
 5. 사용자가 앱 또는 알림에서 그리기를 시작한다.
 6. foreground service가 지속 알림과 함께 실행된다.
 7. 사용자가 현재 보고 있는 화면 위에 직접 낙서한다.
 8. stroke는 Firebase를 통해 선택한 방의 상대에게 동기화된다.
 9. 사용자가 알림/오버레이/앱에서 그리기를 끄거나 전체 지우기를 실행할 수 있다.
+
+## 앱 내부 권한 안내 기준 문구
+
+Play Console 설명, 개인정보 처리방침, Data safety 답변, 심사용 영상 설명은 앱 내부 첫 실행 안내와 같은 내용을 말해야 한다.
+
+```text
+처음 한 번만 권한을 설정해 주세요. 알림은 그리기 시작과 끄기에, 다른 앱 위에 표시 권한은 지금 보는 화면 위에 선을 띄우는 데 사용해요.
+```
+
+```text
+상대에게 낙서를 보내려면 화면 위 그리기 권한이 필요해요. lovedraw는 화면 내용을 읽거나 저장하지 않아요.
+```
 
 ## 정책상 강조해야 할 점
 
@@ -58,4 +70,3 @@ lovedraw uses a user-enabled foreground service to show a drawing overlay over o
 - `AndroidManifest.xml`의 special use subtype이 실제 기능과 일치하는지 확인
 - release 빌드에서 foreground service 알림이 항상 보이는지 확인
 - 실제 기기에서 권한 거부/허용/중지 흐름을 녹화해 보관
-

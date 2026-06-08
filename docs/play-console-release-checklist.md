@@ -110,11 +110,18 @@ lovedraw uses a user-enabled foreground service to show a drawing overlay over o
 - 다른 앱 위 표시: 화면 위 낙서 오버레이
 - 위치: Distance Widget에서 양쪽 동의 후 1회 공유
 
+심사용 데모와 앱 첫 실행 화면에서는 권한 요청 전에 아래 내용이 사용자에게 먼저 보여야 한다.
+
+- `처음 한 번만 권한을 설정해 주세요.`
+- `다른 앱 위에 표시 권한은 지금 보는 화면 위에 선을 띄우는 데 사용해요.`
+- `lovedraw는 화면 내용을 읽거나 저장하지 않아요.`
+
 ## 6. 실제 기기 QA
 
 최소 두 대의 실제 Android 기기에서 확인한다.
 
 - 첫 실행 권한 안내
+- 권한 요청 전에 알림/다른 앱 위 표시가 왜 필요한지 표시
 - Google 로그인
 - 방 만들기
 - 초대 코드 입장

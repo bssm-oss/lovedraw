@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -408,6 +409,18 @@ private fun RoomRow(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    Text(
+                        status.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = when (status) {
+                            ConnectionDisplayState.Connected -> Mint
+                            ConnectionDisplayState.Waiting -> SunshineYellowDeep
+                            ConnectionDisplayState.Reconnecting -> RauschPink
+                            ConnectionDisplayState.Archived -> WarmGray
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
                 ConnectionStatusPill(status)
                 IconButton(onClick = { showMenu = true }) {
@@ -455,12 +468,19 @@ private fun ConnectionStatusPill(status: ConnectionDisplayState) {
         ConnectionDisplayState.Reconnecting -> RauschPink
         ConnectionDisplayState.Archived -> WarmGray
     }
-    Box(
+    Row(
         modifier = Modifier
             .background(background, RoundedCornerShape(999.dp))
             .semantics { contentDescription = status.accessibilityLabel }
             .padding(horizontal = 10.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .background(content, RoundedCornerShape(999.dp)),
+        )
         Text(status.label, style = MaterialTheme.typography.labelMedium, color = content)
     }
 }
