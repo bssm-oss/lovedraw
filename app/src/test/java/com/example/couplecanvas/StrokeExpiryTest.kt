@@ -33,4 +33,14 @@ class StrokeExpiryTest {
 
         assertEquals(0.5f, stroke.alpha(nowMillis = halfway), 0.01f)
     }
+
+    @Test
+    fun laserStrokeUsesSoftFadeCurve() {
+        val stroke = Stroke(expiresAt = 10_000L)
+        val quarterRemaining = 10_000L - Stroke.LASER_FADE_MS / 4
+        val threeQuarterRemaining = 10_000L - Stroke.LASER_FADE_MS * 3 / 4
+
+        assertTrue(stroke.alpha(nowMillis = threeQuarterRemaining) > 0.75f)
+        assertTrue(stroke.alpha(nowMillis = quarterRemaining) < 0.25f)
+    }
 }

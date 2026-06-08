@@ -5,15 +5,18 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,10 +46,17 @@ import com.example.couplecanvas.presentation.component.SecondaryPastelButton
 import com.example.couplecanvas.presentation.navigation.LocalAppContainer
 import com.example.couplecanvas.presentation.navigation.ViewModelFactory
 import com.example.couplecanvas.presentation.theme.Coral
+import com.example.couplecanvas.presentation.theme.Mint
+import com.example.couplecanvas.presentation.theme.RauschPink
+import com.example.couplecanvas.presentation.theme.Sand
 import com.example.couplecanvas.presentation.theme.SunshineYellow
+import com.example.couplecanvas.presentation.theme.SunshineYellowDeep
 import com.example.couplecanvas.presentation.theme.WarmBlack
+import com.example.couplecanvas.presentation.theme.WarmSurface
 import com.example.couplecanvas.presentation.theme.WarmGray
+import com.example.couplecanvas.util.ConnectionDisplayState
 import com.example.couplecanvas.util.WaitingInviteCopy
+import com.example.couplecanvas.util.connectionDisplayState
 
 @Composable
 fun WaitingRoomScreen(roomId: String, onBack: () -> Unit, onOpenRoom: (String) -> Unit) {
@@ -117,6 +129,10 @@ fun WaitingRoomScreen(roomId: String, onBack: () -> Unit, onOpenRoom: (String) -
                         },
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    WaitingConnectionStatusCard(
+                        status = room.connectionDisplayState(uiState.isFirebaseConnected),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                     RoundedPastelButton(
                         text = WaitingInviteCopy.PRIMARY_BUTTON,
                         onClick = { showInviteDialog = true },
@@ -156,5 +172,34 @@ fun WaitingRoomScreen(roomId: String, onBack: () -> Unit, onOpenRoom: (String) -
             onDismiss = { showInviteDialog = false },
             onMessage = { message -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show() },
         )
+    }
+}
+
+@Composable
+private fun WaitingConnectionStatusCard(status: ConnectionDisplayState, modifier: Modifier = Modifier) {
+    val accent = when (status) {
+        ConnectionDisplayState.Connected -> Mint
+        ConnectionDisplayState.Waiting -> SunshineYellowDeep
+        ConnectionDisplayState.Reconnecting -> RauschPink
+        ConnectionDisplayState.Archived -> WarmGray
+    }
+    Row(
+        modifier = modifier
+            .background(WarmSurface, RoundedCornerShape(18.dp))
+            .border(1.dp, Sand, RoundedCornerShape(18.dp))
+            .semantics { contentDescription = status.accessibilityLabel }
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .background(accent, CircleShape),
+        )
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(status.label, style = MaterialTheme.typography.labelLarge, color = WarmBlack)
+            Text(status.description, style = MaterialTheme.typography.bodySmall, color = WarmGray)
+        }
     }
 }

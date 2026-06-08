@@ -85,7 +85,8 @@ data class Stroke(
         if (expiresAt <= 0L) return 1f
         val remaining = expiresAt - nowMillis
         if (remaining >= LASER_FADE_MS) return 1f
-        return (remaining.toFloat() / LASER_FADE_MS.toFloat()).coerceIn(0f, 1f)
+        val progress = (remaining.toFloat() / LASER_FADE_MS.toFloat()).coerceIn(0f, 1f)
+        return progress * progress * (3f - 2f * progress)
     }
 
     companion object {
