@@ -16,6 +16,7 @@ Play Console Data safety 답변 초안은 [docs/play-console-data-safety-ko.md](
 - 광고 SDK, 분석 SDK, 백그라운드 위치 추적, 몰래 위치 수집, Accessibility Service는 사용하지 않는다.
 - 방 기록은 Google 계정으로 다시 로그인하면 복구할 수 있다.
 - 권한 요청 직전 앱 안에서 왜 필요한지 짧게 설명한다.
+- 앱 설정 화면에서 개인정보처리방침, 계정/데이터 삭제 요청, 문의 경로를 제공한다. 실제 URL과 이메일은 `LOVEDRAW_PRIVACY_POLICY_URL`, `LOVEDRAW_ACCOUNT_DELETION_URL`, `LOVEDRAW_SUPPORT_EMAIL`로 주입한다.
 
 ## Firebase에 저장되는 데이터
 

@@ -53,6 +53,16 @@ release signing 값이 없으면 debug/release 검증 빌드는 가능하지만 
 - 개인정보 처리방침 시행일
 - 데이터 삭제 요청 방법
 
+앱 설정 화면에서 열릴 운영 링크도 `local.properties`, Gradle property, CI 환경변수 중 하나로 설정한다.
+
+```properties
+LOVEDRAW_PRIVACY_POLICY_URL=https://your-domain.example/privacy
+LOVEDRAW_ACCOUNT_DELETION_URL=https://your-domain.example/delete-account
+LOVEDRAW_SUPPORT_EMAIL=support@your-domain.example
+```
+
+이 값이 비어 있으면 앱 설정 화면에서 해당 버튼이 비활성화된다.
+
 ## 4. Play Console Data safety
 
 앱의 실제 동작 기준으로 작성한다.

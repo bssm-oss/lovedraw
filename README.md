@@ -123,7 +123,17 @@ Firebase Console에서 켜야 하는 기능:
    COUPLE_CANVAS_DATABASE_URL=https://your-project-id-default-rtdb.asia-southeast1.firebasedatabase.app
    ```
 
-7. Google 로그인을 설정합니다.
+7. 출시용 운영 링크를 준비합니다.
+
+   실제 출시 전에는 앱 설정 화면과 Play Console에 들어갈 공개 URL/연락처를 넣어야 합니다. 개발 중에는 비워둘 수 있지만, 출시 전에는 반드시 실제 값으로 채웁니다.
+
+   ```properties
+   LOVEDRAW_PRIVACY_POLICY_URL=https://your-domain.example/privacy
+   LOVEDRAW_ACCOUNT_DELETION_URL=https://your-domain.example/delete-account
+   LOVEDRAW_SUPPORT_EMAIL=support@your-domain.example
+   ```
+
+8. Google 로그인을 설정합니다.
 
    Firebase Console에서:
 
@@ -252,6 +262,8 @@ Firebase rules 검증 스크립트:
 스토어 제출용 개인정보 처리방침 초안은 [docs/privacy-policy-ko.md](./docs/privacy-policy-ko.md)에 있습니다.
 
 Google Play 제출 체크리스트는 [docs/play-console-release-checklist.md](./docs/play-console-release-checklist.md)에 있습니다.
+
+Data Safety 답변 초안은 [docs/play-console-data-safety-ko.md](./docs/play-console-data-safety-ko.md), Foreground Service special use 선언 초안은 [docs/foreground-service-special-use-ko.md](./docs/foreground-service-special-use-ko.md)에 있습니다.
 
 릴리스 서명은 `keystore.properties.example`을 `keystore.properties`로 복사한 뒤 로컬 비밀값을 채우거나, 같은 이름의 환경변수로 설정합니다. `keystore.properties`와 실제 keystore 파일은 커밋하지 않습니다.
 

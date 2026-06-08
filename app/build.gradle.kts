@@ -69,6 +69,9 @@ android {
         buildConfigField("int", "FIREBASE_AUTH_EMULATOR_PORT", "9099")
         buildConfigField("int", "FIREBASE_DATABASE_EMULATOR_PORT", "9000")
         buildConfigField("int", "FIREBASE_STORAGE_EMULATOR_PORT", "9199")
+        buildConfigField("String", "PRIVACY_POLICY_URL", setting("LOVEDRAW_PRIVACY_POLICY_URL", "").asBuildConfigString())
+        buildConfigField("String", "ACCOUNT_DELETION_URL", setting("LOVEDRAW_ACCOUNT_DELETION_URL", "").asBuildConfigString())
+        buildConfigField("String", "SUPPORT_EMAIL", setting("LOVEDRAW_SUPPORT_EMAIL", "").asBuildConfigString())
         manifestPlaceholders["usesCleartextTraffic"] = "false"
     }
 
