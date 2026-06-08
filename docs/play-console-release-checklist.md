@@ -2,6 +2,21 @@
 
 이 체크리스트는 코드 저장소 밖에서 처리해야 하는 Google Play 제출 항목을 정리한 문서입니다. 체크리스트를 완료하기 전까지는 `app-release-unsigned.apk`만으로 실제 출시할 수 없습니다.
 
+참고해야 할 Google 공식 문서:
+
+- [Data safety 섹션 작성 안내](https://support.google.com/googleplay/android-developer/answer/10787469)
+- [앱 계정 삭제 요구사항](https://support.google.com/googleplay/android-developer/answer/13327111)
+- [Google Play 개발자 프로그램 정책](https://support.google.com/googleplay/android-developer/answer/15402170)
+- [Foreground service 요구사항](https://support.google.com/googleplay/android-developer/answer/13392821)
+
+출시 직전에는 로컬 설정이 실제 값으로 채워졌는지 먼저 확인합니다.
+
+```bash
+./gradlew :app:verifyReleaseReadiness
+```
+
+이 태스크는 Firebase 운영 URL, 개인정보처리방침 URL, 계정/데이터 삭제 URL, 문의 이메일, release signing, `app/google-services.json` 존재 여부를 점검합니다. Play Console 입력값, Firebase Console의 release SHA 등록 여부, 실제 웹 페이지 공개 상태는 로컬에서 완전히 검증할 수 없으므로 별도로 확인해야 합니다.
+
 ## 1. 릴리스 서명
 
 - Google Play App Signing 사용 여부를 결정한다.
@@ -25,7 +40,7 @@
 - 최종 산출물은 APK보다 AAB 권장:
 
 ```bash
-./gradlew :app:bundleRelease
+./gradlew :app:verifyReleaseReadiness :app:bundleRelease
 ```
 
 release signing 값이 없으면 debug/release 검증 빌드는 가능하지만 Play Console에 올릴 최종 서명 산출물은 만들 수 없다.
@@ -42,8 +57,10 @@ release signing 값이 없으면 debug/release 검증 빌드는 가능하지만 
 ## 3. 개인정보 처리방침 URL
 
 - [docs/privacy-policy-ko.md](./privacy-policy-ko.md)를 실제 운영자 정보로 수정한다.
+- [docs/account-data-deletion-page-ko.md](./account-data-deletion-page-ko.md)를 실제 운영자 정보로 수정한다.
 - 공개 URL에 게시한다.
 - Play Console App content > Privacy policy에 같은 URL을 등록한다.
+- Play Console Data safety > Data deletion에 계정/데이터 삭제 URL을 등록한다.
 - 앱 내부 권한 안내, README, Data safety 답변과 내용이 서로 맞는지 확인한다.
 
 필수로 채울 항목:
@@ -61,7 +78,7 @@ LOVEDRAW_ACCOUNT_DELETION_URL=https://your-domain.example/delete-account
 LOVEDRAW_SUPPORT_EMAIL=support@your-domain.example
 ```
 
-이 값이 비어 있으면 앱 설정 화면에서 해당 버튼이 비활성화된다.
+이 값이 비어 있으면 앱 설정 화면에서 해당 버튼이 비활성화되고, `:app:verifyReleaseReadiness`가 실패한다.
 
 ## 4. Play Console Data safety
 
@@ -125,6 +142,7 @@ git ls-files firebase-debug.log database-debug.log '*.log' '.env' '.env.*' 'app/
 출력은 `.env.example` 같은 example 파일만 허용한다.
 
 ```bash
+./gradlew :app:verifyReleaseReadiness
 ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:assembleRelease
 ```
 

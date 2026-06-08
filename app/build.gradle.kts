@@ -1,4 +1,5 @@
 import java.util.Properties
+import org.gradle.api.GradleException
 
 plugins {
     alias(libs.plugins.android.application)
@@ -40,12 +41,31 @@ val releaseStoreFilePath = secretSetting("LOVEDRAW_RELEASE_STORE_FILE")
 val releaseStorePassword = secretSetting("LOVEDRAW_RELEASE_STORE_PASSWORD")
 val releaseKeyAlias = secretSetting("LOVEDRAW_RELEASE_KEY_ALIAS")
 val releaseKeyPassword = secretSetting("LOVEDRAW_RELEASE_KEY_PASSWORD")
+val databaseUrl = setting("COUPLE_CANVAS_DATABASE_URL", "https://your-project-id-default-rtdb.firebaseio.com")
+val privacyPolicyUrl = setting("LOVEDRAW_PRIVACY_POLICY_URL", "")
+val accountDeletionUrl = setting("LOVEDRAW_ACCOUNT_DELETION_URL", "")
+val supportEmail = setting("LOVEDRAW_SUPPORT_EMAIL", "")
 val hasReleaseSigningConfig = listOf(
     releaseStoreFilePath,
     releaseStorePassword,
     releaseKeyAlias,
     releaseKeyPassword,
 ).all { !it.isNullOrBlank() } && releaseStoreFilePath?.let { rootProject.file(it).isFile } == true
+
+fun String.isConfiguredHttpsUrl(): Boolean {
+    val value = trim()
+    return value.startsWith("https://") && "." in value && " " !in value && !value.hasPlaceholderToken()
+}
+
+fun String.isConfiguredEmail(): Boolean {
+    val value = trim()
+    return "@" in value && "." in value.substringAfter("@") && " " !in value && !value.hasPlaceholderToken()
+}
+
+fun String.hasPlaceholderToken(): Boolean {
+    val normalized = lowercase()
+    return listOf("your-", "example.", "localhost", "127.0.0.1", "10.0.2.2").any { it in normalized }
+}
 
 android {
     namespace = "com.example.couplecanvas"
@@ -62,16 +82,16 @@ android {
         buildConfigField(
             "String",
             "DATABASE_URL",
-            setting("COUPLE_CANVAS_DATABASE_URL", "https://your-project-id-default-rtdb.firebaseio.com").asBuildConfigString(),
+            databaseUrl.asBuildConfigString(),
         )
         buildConfigField("boolean", "USE_FIREBASE_EMULATORS", "false")
         buildConfigField("String", "FIREBASE_EMULATOR_HOST", "\"10.0.2.2\"")
         buildConfigField("int", "FIREBASE_AUTH_EMULATOR_PORT", "9099")
         buildConfigField("int", "FIREBASE_DATABASE_EMULATOR_PORT", "9000")
         buildConfigField("int", "FIREBASE_STORAGE_EMULATOR_PORT", "9199")
-        buildConfigField("String", "PRIVACY_POLICY_URL", setting("LOVEDRAW_PRIVACY_POLICY_URL", "").asBuildConfigString())
-        buildConfigField("String", "ACCOUNT_DELETION_URL", setting("LOVEDRAW_ACCOUNT_DELETION_URL", "").asBuildConfigString())
-        buildConfigField("String", "SUPPORT_EMAIL", setting("LOVEDRAW_SUPPORT_EMAIL", "").asBuildConfigString())
+        buildConfigField("String", "PRIVACY_POLICY_URL", privacyPolicyUrl.asBuildConfigString())
+        buildConfigField("String", "ACCOUNT_DELETION_URL", accountDeletionUrl.asBuildConfigString())
+        buildConfigField("String", "SUPPORT_EMAIL", supportEmail.asBuildConfigString())
         manifestPlaceholders["usesCleartextTraffic"] = "false"
     }
 
@@ -157,4 +177,51 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+tasks.register("verifyReleaseReadiness") {
+    group = "verification"
+    description = "Checks local lovedraw release settings before uploading a Play Store build."
+
+    doLast {
+        val failures = mutableListOf<String>()
+
+        fun requireReady(condition: Boolean, message: String) {
+            if (!condition) failures += message
+        }
+
+        requireReady(
+            databaseUrl.isConfiguredHttpsUrl(),
+            "Set COUPLE_CANVAS_DATABASE_URL to the production Firebase Realtime Database HTTPS URL.",
+        )
+        requireReady(
+            privacyPolicyUrl.isConfiguredHttpsUrl(),
+            "Set LOVEDRAW_PRIVACY_POLICY_URL to a public, non-placeholder HTTPS privacy policy URL.",
+        )
+        requireReady(
+            accountDeletionUrl.isConfiguredHttpsUrl(),
+            "Set LOVEDRAW_ACCOUNT_DELETION_URL to a public, non-placeholder HTTPS account/data deletion URL.",
+        )
+        requireReady(
+            supportEmail.isConfiguredEmail(),
+            "Set LOVEDRAW_SUPPORT_EMAIL to a real support email address.",
+        )
+        requireReady(
+            hasReleaseSigningConfig,
+            "Configure release signing via keystore.properties or CI secrets before publishing.",
+        )
+        requireReady(
+            project.file("google-services.json").isFile,
+            "Place the production app/google-services.json locally before building the Play release.",
+        )
+
+        if (failures.isNotEmpty()) {
+            throw GradleException(
+                buildString {
+                    appendLine("lovedraw release readiness check failed:")
+                    failures.forEach { appendLine("- $it") }
+                },
+            )
+        }
+    }
 }

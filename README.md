@@ -169,6 +169,16 @@ Firebase Console에서 켜야 하는 기능:
     ./gradlew :app:testDebugUnitTest
     ```
 
+11. 출시 직전 설정을 검증합니다.
+
+    실제 Play Store 업로드 전에 아래 태스크가 통과해야 합니다.
+
+    ```bash
+    ./gradlew :app:verifyReleaseReadiness
+    ```
+
+    이 태스크는 운영 Firebase URL, 공개 개인정보처리방침 URL, 계정/데이터 삭제 URL, 문의 이메일, release signing, 로컬 `app/google-services.json` 존재 여부를 확인합니다. Play Console 입력값과 Firebase Console의 release SHA 등록은 콘솔에서 별도로 확인해야 합니다.
+
 ## Firebase Emulator로 계정 없이 테스트하기
 
 실제 Google 계정 선택 플로우 없이 빠르게 테스트하려면 Firebase Emulator 모드를 사용합니다.
