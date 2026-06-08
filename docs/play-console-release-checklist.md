@@ -128,6 +128,7 @@ lovedraw uses a user-enabled foreground service to show a drawing overlay over o
 - QR 스캔으로 `lovedraw://invite?code=XXXXXX` 열기
 - 카카오톡 설치/미설치 공유 fallback
 - 인스타그램 설치/미설치 공유 fallback
+- Android 11 이상 기기에서 카카오톡/인스타그램 직접 공유 버튼이 설치 앱을 감지하는지 확인
 - 홈 화면 위 오버레이 그리기
 - 다른 앱 위 오버레이 그리기
 - 상대 화면 실시간 동기화
