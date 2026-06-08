@@ -69,6 +69,7 @@ import com.example.couplecanvas.presentation.theme.WarmCanvas
 import com.example.couplecanvas.presentation.theme.WarmGray
 import com.example.couplecanvas.presentation.theme.WarmSurface
 import com.example.couplecanvas.presentation.theme.WarmSurfaceAlt
+import com.example.couplecanvas.util.PermissionOnboardingCopy
 import kotlinx.coroutines.launch
 
 @Composable
@@ -118,7 +119,7 @@ fun PermissionOnboardingScreen(onReady: () -> Unit) {
 
             !notificationGranted -> {
                 pendingFlow = false
-                coroutineScope.launch { snackbarHostState.showSnackbar("알림 권한을 허용해주세요") }
+                coroutineScope.launch { snackbarHostState.showSnackbar(PermissionOnboardingCopy.NOTIFICATION_DENIED) }
             }
 
             !overlayGranted && !overlayAttempted -> {
@@ -128,7 +129,7 @@ fun PermissionOnboardingScreen(onReady: () -> Unit) {
 
             !overlayGranted -> {
                 pendingFlow = false
-                coroutineScope.launch { snackbarHostState.showSnackbar("화면 위 그리기를 허용해주세요") }
+                coroutineScope.launch { snackbarHostState.showSnackbar(PermissionOnboardingCopy.OVERLAY_DENIED) }
             }
 
             includeLocation && !locationGranted && !locationAttempted -> {
@@ -138,7 +139,7 @@ fun PermissionOnboardingScreen(onReady: () -> Unit) {
 
             includeLocation && !locationGranted -> {
                 pendingFlow = false
-                coroutineScope.launch { snackbarHostState.showSnackbar("거리 위젯은 위치 권한이 필요해요") }
+                coroutineScope.launch { snackbarHostState.showSnackbar(PermissionOnboardingCopy.LOCATION_DENIED) }
             }
 
             else -> {
@@ -174,22 +175,22 @@ fun PermissionOnboardingScreen(onReady: () -> Unit) {
             Header()
             PermissionCard(
                 icon = Icons.Rounded.Notifications,
-                title = "알림",
-                body = "그리기 시작, 끄기, 전체 지우기를 알림에서 바로 조작해요.",
+                title = PermissionOnboardingCopy.NOTIFICATION_TITLE,
+                body = PermissionOnboardingCopy.NOTIFICATION_BODY,
                 granted = notificationGranted,
                 required = true,
             )
             PermissionCard(
                 icon = Icons.Rounded.Brush,
-                title = "화면 위 그리기",
-                body = "상대에게 낙서를 보내려면 지금 보는 화면 위에 선을 띄울 수 있어야 해요.",
+                title = PermissionOnboardingCopy.OVERLAY_TITLE,
+                body = PermissionOnboardingCopy.OVERLAY_BODY,
                 granted = overlayGranted,
                 required = true,
             )
             PermissionCard(
                 icon = Icons.Rounded.LocationOn,
-                title = "위치",
-                body = "거리 위젯을 직접 켤 때만 사용해요. 기본값은 꺼짐이에요.",
+                title = PermissionOnboardingCopy.LOCATION_TITLE,
+                body = PermissionOnboardingCopy.LOCATION_BODY,
                 granted = locationGranted,
                 required = false,
                 trailing = {
@@ -199,7 +200,7 @@ fun PermissionOnboardingScreen(onReady: () -> Unit) {
             SafetyNoteCard()
             Spacer(Modifier.height(6.dp))
             RoundedPastelButton(
-                text = if (pendingFlow) "확인 중..." else "권한 설정하기",
+                text = if (pendingFlow) PermissionOnboardingCopy.PRIMARY_BUTTON_PENDING else PermissionOnboardingCopy.PRIMARY_BUTTON_IDLE,
                 enabled = !pendingFlow,
                 onClick = {
                     refreshPermissions()
@@ -212,14 +213,14 @@ fun PermissionOnboardingScreen(onReady: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
             )
             SecondaryPastelButton(
-                text = "다시 확인",
+                text = PermissionOnboardingCopy.SECONDARY_BUTTON,
                 enabled = !pendingFlow,
                 onClick = {
                     refreshPermissions()
                     if (hasRequiredStartupPermissions(context)) {
                         onReady()
                     } else {
-                        coroutineScope.launch { snackbarHostState.showSnackbar("필수 권한을 먼저 허용해주세요") }
+                        coroutineScope.launch { snackbarHostState.showSnackbar(PermissionOnboardingCopy.REQUIRED_PERMISSION_DENIED) }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -254,12 +255,12 @@ private fun Header() {
         ) {
             BrandIconTile(Modifier.size(64.dp))
             Text(
-                "화면 위에 마음을 보내려면",
+                PermissionOnboardingCopy.HEADER_TITLE,
                 style = MaterialTheme.typography.headlineMedium,
                 color = WarmBlack,
             )
             Text(
-                "상대에게 낙서를 보내려면 알림과 화면 위 그리기 권한이 필요해요. lovedraw는 화면 내용을 읽거나 몰래 저장하지 않아요.",
+                PermissionOnboardingCopy.HEADER_BODY,
                 style = MaterialTheme.typography.bodyMedium,
                 color = WarmGray,
             )
@@ -292,8 +293,8 @@ private fun SafetyNoteCard() {
                 Icon(Icons.Rounded.Security, contentDescription = null, tint = WarmBlack)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("권한은 이 기능에만 사용해요", style = MaterialTheme.typography.titleSmall, color = WarmBlack)
-                Text("화면 캡처 없음 · 몰래 위치 추적 없음 · 언제든 설정에서 끌 수 있음", style = MaterialTheme.typography.bodyMedium, color = WarmGray)
+                Text(PermissionOnboardingCopy.SAFETY_TITLE, style = MaterialTheme.typography.titleSmall, color = WarmBlack)
+                Text(PermissionOnboardingCopy.SAFETY_BODY, style = MaterialTheme.typography.bodyMedium, color = WarmGray)
             }
         }
     }
