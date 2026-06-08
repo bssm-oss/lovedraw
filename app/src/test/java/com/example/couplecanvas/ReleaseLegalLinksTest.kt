@@ -21,6 +21,7 @@ class ReleaseLegalLinksTest {
         assertTrue(ready.hasPrivacyPolicyUrl)
         assertTrue(ready.hasAccountDeletionUrl)
         assertTrue(ready.hasSupportEmail)
+        assertTrue(ready.hasRequiredConsentLinks)
         assertTrue(ready.isReleaseReady)
     }
 
@@ -35,6 +36,7 @@ class ReleaseLegalLinksTest {
         assertFalse(missing.hasPrivacyPolicyUrl)
         assertFalse(missing.hasAccountDeletionUrl)
         assertFalse(missing.hasSupportEmail)
+        assertFalse(missing.hasRequiredConsentLinks)
         assertFalse(missing.isReleaseReady)
     }
 
@@ -49,6 +51,7 @@ class ReleaseLegalLinksTest {
         assertFalse(placeholder.hasPrivacyPolicyUrl)
         assertFalse(placeholder.hasAccountDeletionUrl)
         assertFalse(placeholder.hasSupportEmail)
+        assertFalse(placeholder.hasRequiredConsentLinks)
         assertFalse(placeholder.isReleaseReady)
     }
 

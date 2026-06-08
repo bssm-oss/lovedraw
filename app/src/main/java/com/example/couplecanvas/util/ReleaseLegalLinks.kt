@@ -16,6 +16,9 @@ data class ReleaseLegalLinks(
     val hasSupportEmail: Boolean
         get() = supportEmail.isConfiguredReleaseEmail()
 
+    val hasRequiredConsentLinks: Boolean
+        get() = hasPrivacyPolicyUrl && hasAccountDeletionUrl
+
     val isReleaseReady: Boolean
         get() = hasPrivacyPolicyUrl && hasAccountDeletionUrl && hasSupportEmail
 }

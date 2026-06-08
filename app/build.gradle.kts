@@ -45,6 +45,8 @@ val databaseUrl = setting("COUPLE_CANVAS_DATABASE_URL", "https://your-project-id
 val privacyPolicyUrl = setting("LOVEDRAW_PRIVACY_POLICY_URL", "")
 val accountDeletionUrl = setting("LOVEDRAW_ACCOUNT_DELETION_URL", "")
 val supportEmail = setting("LOVEDRAW_SUPPORT_EMAIL", "")
+val operatorName = setting("LOVEDRAW_OPERATOR_NAME", "")
+val policyEffectiveDate = setting("LOVEDRAW_POLICY_EFFECTIVE_DATE", "")
 val hasReleaseSigningConfig = listOf(
     releaseStoreFilePath,
     releaseStorePassword,
@@ -62,9 +64,29 @@ fun String.isConfiguredEmail(): Boolean {
     return "@" in value && "." in value.substringAfter("@") && " " !in value && !value.hasPlaceholderToken()
 }
 
+fun String.isConfiguredReleaseText(): Boolean {
+    val value = trim()
+    return value.length >= 2 && !value.hasPlaceholderToken()
+}
+
+fun String.isConfiguredIsoDate(): Boolean {
+    val value = trim()
+    return Regex("""\d{4}-\d{2}-\d{2}""").matches(value) && !value.hasPlaceholderToken()
+}
+
 fun String.hasPlaceholderToken(): Boolean {
     val normalized = lowercase()
-    return listOf("your-", "example.", "localhost", "127.0.0.1", "10.0.2.2").any { it in normalized }
+    return listOf(
+        "your-",
+        "example.",
+        "localhost",
+        "127.0.0.1",
+        "10.0.2.2",
+        "change-me",
+        "출시 전",
+        "입력 필요",
+        "확정 필요",
+    ).any { it in normalized }
 }
 
 android {
@@ -205,6 +227,14 @@ tasks.register("verifyReleaseReadiness") {
         requireReady(
             supportEmail.isConfiguredEmail(),
             "Set LOVEDRAW_SUPPORT_EMAIL to a real support email address.",
+        )
+        requireReady(
+            operatorName.isConfiguredReleaseText(),
+            "Set LOVEDRAW_OPERATOR_NAME to the public operator/developer name shown in legal documents.",
+        )
+        requireReady(
+            policyEffectiveDate.isConfiguredIsoDate(),
+            "Set LOVEDRAW_POLICY_EFFECTIVE_DATE to the privacy policy effective date in YYYY-MM-DD format.",
         )
         requireReady(
             hasReleaseSigningConfig,

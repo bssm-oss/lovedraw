@@ -131,6 +131,8 @@ Firebase Console에서 켜야 하는 기능:
    LOVEDRAW_PRIVACY_POLICY_URL=https://your-domain.example/privacy
    LOVEDRAW_ACCOUNT_DELETION_URL=https://your-domain.example/delete-account
    LOVEDRAW_SUPPORT_EMAIL=support@your-domain.example
+   LOVEDRAW_OPERATOR_NAME=your-public-operator-name
+   LOVEDRAW_POLICY_EFFECTIVE_DATE=2026-06-08
    ```
 
 8. Google 로그인을 설정합니다.

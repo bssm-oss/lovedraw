@@ -1,8 +1,8 @@
 # lovedraw 개인정보 처리방침 초안
 
-시행일: 출시 전 확정 필요
+시행일: `LOVEDRAW_POLICY_EFFECTIVE_DATE` 값으로 확정
 
-이 문서는 lovedraw Android 앱의 개인정보 처리 기준을 설명합니다. 실제 배포 전에는 앱 운영자명, 연락처, 개인정보 처리방침 URL, Google Play Console Data safety 답변과 내용이 일치하도록 최종 검토해야 합니다.
+이 문서는 lovedraw Android 앱의 개인정보 처리 기준을 설명합니다. 실제 배포 전에는 앱 운영자명(`LOVEDRAW_OPERATOR_NAME`), 연락처(`LOVEDRAW_SUPPORT_EMAIL`), 개인정보 처리방침 URL(`LOVEDRAW_PRIVACY_POLICY_URL`), Google Play Console Data safety 답변과 내용이 일치하도록 최종 검토해야 합니다.
 
 ## 1. 수집하는 정보
 
@@ -69,7 +69,7 @@ lovedraw는 앱 기능 제공을 위해 다음 서비스를 사용합니다.
 
 사용자가 방을 나가거나 콘텐츠를 삭제하면 앱은 해당 요청을 Firebase 데이터에 반영합니다. Google 계정으로 다시 로그인하면 남아 있는 방 기록을 복구할 수 있습니다.
 
-계정 또는 데이터 삭제 요청 절차는 실제 출시 전 운영자 연락처와 함께 확정해야 합니다.
+계정 또는 데이터 삭제 요청 절차는 공개 삭제 요청 URL(`LOVEDRAW_ACCOUNT_DELETION_URL`)과 운영자 연락처(`LOVEDRAW_SUPPORT_EMAIL`)에 맞춰 확정해야 합니다.
 
 ## 7. 이용자의 선택권
 
@@ -98,9 +98,8 @@ lovedraw는 커플 간 기록 앱이며, 민감하거나 노골적인 콘텐츠 
 
 ## 10. 문의
 
-운영자: 출시 전 입력 필요
+운영자: `LOVEDRAW_OPERATOR_NAME`
 
-이메일: 출시 전 입력 필요
+이메일: `LOVEDRAW_SUPPORT_EMAIL`
 
-개인정보 처리방침 URL: 출시 전 입력 필요
-
+개인정보 처리방침 URL: `LOVEDRAW_PRIVACY_POLICY_URL`

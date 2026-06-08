@@ -127,7 +127,7 @@
 ## 보안 관행
 
 - 데이터 전송 암호화: Firebase SDK의 TLS 전송 사용
-- 삭제 요청: 출시 전 실제 이메일 또는 웹 양식을 공개해야 함
+- 삭제 요청: `LOVEDRAW_ACCOUNT_DELETION_URL`에 공개 웹 경로를 게시하고, `LOVEDRAW_SUPPORT_EMAIL`로 접수 가능한 연락 경로를 제공해야 함
 - 독립 보안 검토: 실제 보안 검토를 받지 않았다면 아니오
 
 ## Play Console에 쓰기 좋은 요약 문구
@@ -144,4 +144,3 @@ lovedraw collects Google account profile information, room data, user-created dr
 - Firebase Database/Storage rules가 방 참여자 범위로 제한됨
 - 실제 운영자명, 문의 이메일, 개인정보 처리방침 공개 URL 입력 완료
 - 계정/데이터 삭제 요청 경로 공개 완료
-

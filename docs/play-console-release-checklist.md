@@ -76,6 +76,8 @@ release signing 값이 없으면 debug/release 검증 빌드는 가능하지만 
 LOVEDRAW_PRIVACY_POLICY_URL=https://your-domain.example/privacy
 LOVEDRAW_ACCOUNT_DELETION_URL=https://your-domain.example/delete-account
 LOVEDRAW_SUPPORT_EMAIL=support@your-domain.example
+LOVEDRAW_OPERATOR_NAME=your-public-operator-name
+LOVEDRAW_POLICY_EFFECTIVE_DATE=2026-06-08
 ```
 
 이 값이 비어 있으면 앱 설정 화면에서 해당 버튼이 비활성화되고, `:app:verifyReleaseReadiness`가 실패한다.

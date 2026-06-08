@@ -13,12 +13,14 @@ class LoginLegalConsentCopyTest {
             LoginLegalConsentCopy.BODY,
             LoginLegalConsentCopy.CHECKBOX,
             LoginLegalConsentCopy.REQUIRED,
+            LoginLegalConsentCopy.LINKS_REQUIRED,
         ).joinToString(" ")
 
         assertTrue(combined.contains("Google 계정"))
         assertTrue(combined.contains("개인정보처리방침"))
         assertTrue(combined.contains("계정/데이터 삭제"))
         assertTrue(combined.contains("확인"))
+        assertTrue(combined.contains("삭제 요청 경로"))
     }
 
     @Test

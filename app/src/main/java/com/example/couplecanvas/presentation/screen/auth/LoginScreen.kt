@@ -58,6 +58,7 @@ import com.example.couplecanvas.presentation.theme.WarmBlack
 import com.example.couplecanvas.presentation.theme.WarmGray
 import com.example.couplecanvas.presentation.theme.WarmSurfaceAlt
 import com.example.couplecanvas.util.LoginLegalConsentCopy
+import com.example.couplecanvas.util.ReleaseLegalConfig
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -80,6 +81,8 @@ fun LoginScreen(onSignedIn: () -> Unit) {
     val coroutineScope = rememberCoroutineScope()
     var credentialFlowLoading by remember { mutableStateOf(false) }
     var legalConsentAccepted by remember { mutableStateOf(false) }
+    val legalLinks = remember { ReleaseLegalConfig.current() }
+    val legalConsentLinksReady = BuildConfig.DEBUG || legalLinks.hasRequiredConsentLinks
     val isLoading = uiState.isLoading || credentialFlowLoading
 
     LaunchedEffect(user) {
@@ -159,12 +162,15 @@ fun LoginScreen(onSignedIn: () -> Unit) {
                 )
                 RoundedPastelButton(
                     text = if (isLoading) "로그인 중..." else "Google로 시작하기",
-                    enabled = !isLoading && webClientId.isNotBlank() && legalConsentAccepted,
+                    enabled = !isLoading && webClientId.isNotBlank() && legalConsentAccepted && legalConsentLinksReady,
                     onClick = signInClick,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 if (!legalConsentAccepted) {
                     Text(LoginLegalConsentCopy.REQUIRED, color = WarmGray, style = MaterialTheme.typography.bodySmall)
+                }
+                if (!legalConsentLinksReady) {
+                    Text(LoginLegalConsentCopy.LINKS_REQUIRED, color = Coral, style = MaterialTheme.typography.bodySmall)
                 }
                 if (webClientId.isBlank()) {
                     Text("Google 설정 필요", color = Coral, style = MaterialTheme.typography.bodySmall)
