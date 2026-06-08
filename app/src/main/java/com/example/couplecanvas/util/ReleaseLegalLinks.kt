@@ -8,13 +8,13 @@ data class ReleaseLegalLinks(
     val supportEmail: String,
 ) {
     val hasPrivacyPolicyUrl: Boolean
-        get() = privacyPolicyUrl.isValidWebUrl()
+        get() = privacyPolicyUrl.isConfiguredReleaseWebUrl()
 
     val hasAccountDeletionUrl: Boolean
-        get() = accountDeletionUrl.isValidWebUrl()
+        get() = accountDeletionUrl.isConfiguredReleaseWebUrl()
 
     val hasSupportEmail: Boolean
-        get() = supportEmail.isValidEmail()
+        get() = supportEmail.isConfiguredReleaseEmail()
 
     val isReleaseReady: Boolean
         get() = hasPrivacyPolicyUrl && hasAccountDeletionUrl && hasSupportEmail
@@ -40,4 +40,27 @@ fun String.isValidEmail(): Boolean {
     return value.contains("@") &&
         value.substringAfter("@").contains(".") &&
         !value.contains(" ")
+}
+
+fun String.isConfiguredReleaseWebUrl(): Boolean {
+    val value = trim()
+    return value.isValidWebUrl() &&
+        value.startsWith("https://") &&
+        !value.hasPlaceholderToken()
+}
+
+fun String.isConfiguredReleaseEmail(): Boolean {
+    val value = trim()
+    return value.isValidEmail() && !value.hasPlaceholderToken()
+}
+
+private fun String.hasPlaceholderToken(): Boolean {
+    val normalized = lowercase()
+    return listOf(
+        "your-",
+        "example.",
+        "localhost",
+        "127.0.0.1",
+        "10.0.2.2",
+    ).any { it in normalized }
 }
