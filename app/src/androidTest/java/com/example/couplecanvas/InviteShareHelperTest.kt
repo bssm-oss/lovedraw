@@ -16,6 +16,8 @@ class InviteShareHelperTest {
 
         assertEquals("ABC123", payload.roomCode)
         assertEquals("lovedraw://invite?code=ABC123", payload.inviteLink)
+        assertTrue(payload.inviteLink.startsWith("lovedraw://invite?code="))
+        assertTrue(payload.inviteLink.none { it.isWhitespace() })
         assertTrue(payload.shareText.contains("우리 방"))
         assertTrue(payload.shareText.contains("ABC123"))
         assertTrue(payload.shareText.contains(payload.inviteLink))

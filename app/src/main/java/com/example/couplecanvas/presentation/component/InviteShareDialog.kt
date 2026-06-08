@@ -119,8 +119,8 @@ fun InviteShareDialog(
                         modifier = Modifier.weight(1f),
                     )
                     SecondaryPastelButton(
-                        text = "복사",
-                        onClick = { copy("lovedraw invite", invite.shareText) },
+                        text = "링크 복사",
+                        onClick = { copy("lovedraw invite link", invite.inviteLink) },
                         modifier = Modifier.weight(1f),
                     )
                 }
