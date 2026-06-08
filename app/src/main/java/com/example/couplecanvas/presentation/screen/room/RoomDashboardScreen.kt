@@ -68,6 +68,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -235,6 +237,7 @@ private fun RoomConnectionBanner(status: ConnectionDisplayState, roomCode: Strin
             .fillMaxWidth()
             .background(WarmSurface, RoundedCornerShape(18.dp))
             .border(1.dp, Sand, RoundedCornerShape(18.dp))
+            .semantics { contentDescription = status.accessibilityLabel }
             .padding(horizontal = 14.dp, vertical = 11.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,

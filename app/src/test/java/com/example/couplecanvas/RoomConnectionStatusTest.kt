@@ -9,6 +9,24 @@ import org.junit.Test
 
 class RoomConnectionStatusTest {
     @Test
+    fun connectionStatesUseClearUserFacingCopy() {
+        assertEquals("연결됨", ConnectionDisplayState.Connected.label)
+        assertEquals("서로 같은 방에 있어요.", ConnectionDisplayState.Connected.description)
+        assertEquals("상대 대기 중", ConnectionDisplayState.Waiting.label)
+        assertEquals("초대 코드로 들어오면 바로 연결돼요.", ConnectionDisplayState.Waiting.description)
+        assertEquals("재연결 중", ConnectionDisplayState.Reconnecting.label)
+        assertEquals("네트워크를 다시 확인하고 있어요.", ConnectionDisplayState.Reconnecting.description)
+    }
+
+    @Test
+    fun accessibilityLabelCombinesStatusAndMeaning() {
+        assertEquals(
+            "재연결 중: 네트워크를 다시 확인하고 있어요.",
+            ConnectionDisplayState.Reconnecting.accessibilityLabel,
+        )
+    }
+
+    @Test
     fun waitingRoomShowsPartnerWaitingWhenFirebaseIsConnected() {
         val room = Room(status = RoomStatus.Waiting.value, hostUid = "host", members = mapOf("host" to true))
 

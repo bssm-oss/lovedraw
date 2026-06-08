@@ -23,6 +23,10 @@ enum class ConnectionDisplayState(
         label = "보관됨",
         description = "다시 열면 이어서 사용할 수 있어요.",
     ),
+    ;
+
+    val accessibilityLabel: String
+        get() = "$label: $description"
 }
 
 fun Room.connectionDisplayState(firebaseConnected: Boolean): ConnectionDisplayState =
