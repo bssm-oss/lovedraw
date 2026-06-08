@@ -12,6 +12,7 @@ import android.util.AttributeSet
 import android.view.View
 import com.example.couplecanvas.data.model.DrawingPoint
 import com.example.couplecanvas.data.model.Stroke
+import com.example.couplecanvas.util.StrokePointInterpolator
 import kotlin.math.roundToInt
 
 class DrawingOverlayPreviewView @JvmOverloads constructor(
@@ -153,24 +154,24 @@ object OverlayStrokeRenderer {
 
     private fun List<DrawingPoint>.toPath(width: Float, height: Float): Path {
         val path = Path()
-        val first = first()
-        path.moveTo(first.safeX() * width, first.safeY() * height)
-        if (size == 2) {
-            val last = last()
-            path.lineTo(last.safeX() * width, last.safeY() * height)
+        val points = StrokePointInterpolator.normalizedPoints(this)
+        val first = points.first()
+        path.moveTo(first.x * width, first.y * height)
+        if (points.size == 2) {
+            val last = points.last()
+            path.lineTo(last.x * width, last.y * height)
             return path
         }
-        for (index in 1 until size - 1) {
-            val current = this[index]
-            val next = this[index + 1]
-            val currentX = current.safeX() * width
-            val currentY = current.safeY() * height
-            val nextX = next.safeX() * width
-            val nextY = next.safeY() * height
-            path.quadTo(currentX, currentY, (currentX + nextX) / 2f, (currentY + nextY) / 2f)
+        StrokePointInterpolator.cubicSegments(points).forEach { segment ->
+            path.cubicTo(
+                segment.control1.x * width,
+                segment.control1.y * height,
+                segment.control2.x * width,
+                segment.control2.y * height,
+                segment.end.x * width,
+                segment.end.y * height,
+            )
         }
-        val last = last()
-        path.lineTo(last.safeX() * width, last.safeY() * height)
         return path
     }
 
