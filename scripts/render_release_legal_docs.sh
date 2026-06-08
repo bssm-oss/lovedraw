@@ -96,9 +96,13 @@ main() {
   mkdir -p "$OUT_DIR"
   render_doc "$ROOT_DIR/docs/privacy-policy-ko.md" "$OUT_DIR/privacy-policy-ko.md"
   render_doc "$ROOT_DIR/docs/account-data-deletion-page-ko.md" "$OUT_DIR/account-data-deletion-page-ko.md"
+  render_doc "$ROOT_DIR/docs/play-console-data-safety-ko.md" "$OUT_DIR/play-console-data-safety-ko.md"
+  render_doc "$ROOT_DIR/docs/foreground-service-special-use-ko.md" "$OUT_DIR/foreground-service-special-use-ko.md"
   echo "Rendered release legal docs:"
   echo "- $OUT_DIR/privacy-policy-ko.md"
   echo "- $OUT_DIR/account-data-deletion-page-ko.md"
+  echo "- $OUT_DIR/play-console-data-safety-ko.md"
+  echo "- $OUT_DIR/foreground-service-special-use-ko.md"
 }
 
 main "$@"

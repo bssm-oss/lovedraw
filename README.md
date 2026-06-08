@@ -146,6 +146,8 @@ Firebase Console에서 켜야 하는 기능:
 
    - `build/release-legal/privacy-policy-ko.md`
    - `build/release-legal/account-data-deletion-page-ko.md`
+   - `build/release-legal/play-console-data-safety-ko.md`
+   - `build/release-legal/foreground-service-special-use-ko.md`
 
 8. Google 로그인을 설정합니다.
 

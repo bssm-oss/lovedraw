@@ -128,6 +128,7 @@
 
 - 데이터 전송 암호화: Firebase SDK의 TLS 전송 사용
 - 삭제 요청: `LOVEDRAW_ACCOUNT_DELETION_URL`에 공개 웹 경로를 게시하고, `LOVEDRAW_SUPPORT_EMAIL`로 접수 가능한 연락 경로를 제공해야 함
+- 삭제 처리 기간: 접수 후 `LOVEDRAW_DELETION_PROCESSING_PERIOD` 내 처리한다고 안내
 - 독립 보안 검토: 실제 보안 검토를 받지 않았다면 아니오
 
 ## Play Console에 쓰기 좋은 요약 문구

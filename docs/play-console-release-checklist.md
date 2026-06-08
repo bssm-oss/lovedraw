@@ -85,7 +85,7 @@ LOVEDRAW_DELETION_PROCESSING_PERIOD=30일
 
 이 값이 비어 있으면 앱 설정 화면에서 해당 버튼이 비활성화되고, `:app:verifyReleaseReadiness`가 실패한다.
 
-공개 게시용 문서 생성:
+공개 게시용 문서와 Play Console 제출 참고 문서 생성:
 
 ```bash
 ./scripts/render_release_legal_docs.sh
