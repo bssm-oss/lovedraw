@@ -20,7 +20,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ExitToApp
+import androidx.compose.material.icons.rounded.Brush
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -75,6 +77,7 @@ import com.example.couplecanvas.presentation.theme.WarmCanvas
 import com.example.couplecanvas.presentation.theme.WarmGray
 import com.example.couplecanvas.presentation.theme.WarmSurface
 import com.example.couplecanvas.util.ConnectionDisplayState
+import com.example.couplecanvas.util.OverlayQuickStartCopy
 import com.example.couplecanvas.util.connectionDisplayState
 import com.example.couplecanvas.util.StatsCalculator
 import kotlinx.coroutines.launch
@@ -260,6 +263,17 @@ fun HomeScreen(
                     )
                 }
             }
+            item {
+                OverlayQuickStartCard(
+                    summary = overlaySummary,
+                    firebaseConnected = uiState.isFirebaseConnected,
+                    overlayEnabled = overlayEnabled,
+                    hasOverlayPermission = hasOverlayPermission,
+                    hasNotificationPermission = hasNotificationPermission,
+                    isBusy = uiState.isBusy,
+                    onStart = { startOverlay(overlaySummary) },
+                )
+            }
             if (uiState.isLoading) {
                 item { EmptyState("불러오는 중", "잠시만요") }
             } else if (activeSummaries.isEmpty() && archivedSummaries.isEmpty()) {
@@ -329,6 +343,91 @@ fun HomeScreen(
             onDismiss = { pendingLeaveSummary = null },
             onConfirm = { pendingLeaveSummary = null; viewModel.leaveRoom(summary.room.roomId) },
         )
+    }
+}
+
+@Composable
+private fun OverlayQuickStartCard(
+    summary: RoomHomeSummary?,
+    firebaseConnected: Boolean,
+    overlayEnabled: Boolean,
+    hasOverlayPermission: Boolean,
+    hasNotificationPermission: Boolean,
+    isBusy: Boolean,
+    onStart: () -> Unit,
+) {
+    val status = summary?.room?.connectionDisplayState(firebaseConnected)
+    val overlayReady = overlayEnabled && summary != null && firebaseConnected
+    val body = when {
+        summary == null -> OverlayQuickStartCopy.NO_ROOM_BODY
+        !firebaseConnected -> OverlayQuickStartCopy.RECONNECTING_BODY
+        !hasNotificationPermission -> OverlayQuickStartCopy.NOTIFICATION_BODY
+        !hasOverlayPermission -> OverlayQuickStartCopy.OVERLAY_BODY
+        overlayReady -> OverlayQuickStartCopy.ENABLED_BODY
+        else -> OverlayQuickStartCopy.READY_BODY
+    }
+    val enabled = summary != null && firebaseConnected && !isBusy
+    val buttonText = when {
+        summary == null -> OverlayQuickStartCopy.NO_ROOM_BUTTON
+        !firebaseConnected -> OverlayQuickStartCopy.RECONNECTING_BUTTON
+        overlayReady -> OverlayQuickStartCopy.ENABLED_BUTTON
+        else -> OverlayQuickStartCopy.START_BUTTON
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = WarmSurface),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(SunshineYellow.copy(alpha = 0.42f), RoundedCornerShape(14.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Rounded.Brush, contentDescription = null, tint = WarmBlack)
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(OverlayQuickStartCopy.TITLE, style = MaterialTheme.typography.titleMedium, color = WarmBlack)
+                    Text(body, style = MaterialTheme.typography.bodySmall, color = WarmGray)
+                }
+                status?.let { ConnectionStatusPill(it) }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RoundedPastelButton(
+                    text = buttonText,
+                    onClick = onStart,
+                    enabled = enabled,
+                    modifier = Modifier.weight(1f),
+                )
+                if (overlayReady) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .background(Mint.copy(alpha = 0.2f), RoundedCornerShape(14.dp)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Rounded.NotificationsActive, contentDescription = "그리기 알림 켜짐", tint = Mint)
+                    }
+                }
+            }
+        }
     }
 }
 

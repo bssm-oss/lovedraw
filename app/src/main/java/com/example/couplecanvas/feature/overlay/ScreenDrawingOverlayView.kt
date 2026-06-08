@@ -10,6 +10,7 @@ import android.view.MotionEvent
 import android.view.View
 import com.example.couplecanvas.data.model.BrushState
 import com.example.couplecanvas.data.model.Stroke
+import com.example.couplecanvas.util.StrokeInputInterpolator
 import kotlin.math.abs
 
 class ScreenDrawingOverlayView @JvmOverloads constructor(
@@ -66,6 +67,7 @@ class ScreenDrawingOverlayView @JvmOverloads constructor(
     private var strokes: List<Stroke> = emptyList()
     private var drawingEnabled = false
     private var activePointerId = MotionEvent.INVALID_POINTER_ID
+    private var lastNormalizedPoint: Pair<Float, Float>? = null
 
     init {
         setWillNotDraw(false)
@@ -104,6 +106,7 @@ class ScreenDrawingOverlayView @JvmOverloads constructor(
                 }
                 activePointerId = event.getPointerId(0)
                 val point = normalized(event.x, event.y)
+                lastNormalizedPoint = point
                 onStartStroke?.invoke(point.first, point.second)
                 return true
             }
@@ -116,10 +119,10 @@ class ScreenDrawingOverlayView @JvmOverloads constructor(
                         event.getHistoricalX(pointerIndex, historyIndex),
                         event.getHistoricalY(pointerIndex, historyIndex),
                     )
-                    onMoveStroke?.invoke(point.first, point.second)
+                    emitMovePoint(point)
                 }
                 val point = normalized(event.getX(pointerIndex), event.getY(pointerIndex))
-                onMoveStroke?.invoke(point.first, point.second)
+                emitMovePoint(point)
                 return true
             }
 
@@ -133,9 +136,10 @@ class ScreenDrawingOverlayView @JvmOverloads constructor(
                 }
                 val pointerIndex = event.findPointerIndex(activePointerId).takeIf { it >= 0 } ?: 0
                 val point = normalized(event.getX(pointerIndex), event.getY(pointerIndex))
-                onMoveStroke?.invoke(point.first, point.second)
+                emitMovePoint(point)
                 onEndStroke?.invoke()
                 activePointerId = MotionEvent.INVALID_POINTER_ID
+                lastNormalizedPoint = null
                 return true
             }
         }
@@ -144,6 +148,21 @@ class ScreenDrawingOverlayView @JvmOverloads constructor(
 
     private fun normalized(x: Float, y: Float): Pair<Float, Float> =
         (x / width.toFloat()).coerceIn(0f, 1f) to (y / height.toFloat()).coerceIn(0f, 1f)
+
+    private fun emitMovePoint(point: Pair<Float, Float>) {
+        val previous = lastNormalizedPoint
+        if (previous == null) {
+            onMoveStroke?.invoke(point.first, point.second)
+            lastNormalizedPoint = point
+            return
+        }
+        StrokeInputInterpolator
+            .interpolatedPoints(previous.first, previous.second, point.first, point.second)
+            .forEach { interpolated ->
+                onMoveStroke?.invoke(interpolated.first, interpolated.second)
+            }
+        lastNormalizedPoint = point
+    }
 
     private fun drawToolbar(canvas: Canvas) {
         updateToolbarGeometry()
