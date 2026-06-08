@@ -59,6 +59,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.couplecanvas.feature.overlay.OverlayPermission
 import com.example.couplecanvas.presentation.component.BrandIconTile
+import com.example.couplecanvas.presentation.component.LegalLinksCard
 import com.example.couplecanvas.presentation.component.RoundedPastelButton
 import com.example.couplecanvas.presentation.component.SecondaryPastelButton
 import com.example.couplecanvas.presentation.theme.Mint
@@ -198,6 +199,7 @@ fun PermissionOnboardingScreen(onReady: () -> Unit) {
                 },
             )
             SafetyNoteCard()
+            LegalLinksCard(Modifier.fillMaxWidth())
             Spacer(Modifier.height(6.dp))
             RoundedPastelButton(
                 text = if (pendingFlow) PermissionOnboardingCopy.PRIMARY_BUTTON_PENDING else PermissionOnboardingCopy.PRIMARY_BUTTON_IDLE,

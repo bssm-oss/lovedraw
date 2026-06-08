@@ -55,6 +55,7 @@ import com.example.couplecanvas.presentation.theme.WarmBlack
 import com.example.couplecanvas.presentation.theme.WarmGray
 import com.example.couplecanvas.presentation.theme.WarmSurface
 import com.example.couplecanvas.presentation.theme.WarmSurfaceAlt
+import com.example.couplecanvas.util.LegalLinksCardCopy
 import com.example.couplecanvas.util.ReleaseLegalConfig
 
 @Composable
@@ -97,32 +98,32 @@ fun LegalLinksCard(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val legalLinks = ReleaseLegalConfig.current()
     SoftCard(modifier) {
-        SectionTitle("개인정보 처리")
+        SectionTitle(LegalLinksCardCopy.TITLE)
         Text(
             if (legalLinks.isReleaseReady) {
-                "개인정보 처리 기준, 데이터 삭제 요청, 문의 경로를 여기서 확인할 수 있어요."
+                LegalLinksCardCopy.READY_BODY
             } else {
-                "개인정보 안내 링크가 아직 연결되지 않았어요. 앱 업데이트 후 다시 확인해주세요."
+                LegalLinksCardCopy.NOT_READY_BODY
             },
             color = WarmGray,
             style = MaterialTheme.typography.bodyMedium,
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SecondaryPastelButton(
-                "처리방침",
+                LegalLinksCardCopy.PRIVACY_BUTTON,
                 onClick = { context.openWebUrl(legalLinks.privacyPolicyUrl) },
                 modifier = Modifier.weight(1f),
                 enabled = legalLinks.hasPrivacyPolicyUrl,
             )
             SecondaryPastelButton(
-                "삭제 요청",
+                LegalLinksCardCopy.DELETION_BUTTON,
                 onClick = { context.openWebUrl(legalLinks.accountDeletionUrl) },
                 modifier = Modifier.weight(1f),
                 enabled = legalLinks.hasAccountDeletionUrl,
             )
         }
         SecondaryPastelButton(
-            "문의 메일 보내기",
+            LegalLinksCardCopy.SUPPORT_BUTTON,
             onClick = { context.sendSupportEmail(legalLinks.supportEmail) },
             modifier = Modifier.fillMaxWidth(),
             enabled = legalLinks.hasSupportEmail,
