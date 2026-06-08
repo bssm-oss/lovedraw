@@ -58,6 +58,7 @@ import com.example.couplecanvas.data.model.RoomStatus
 import com.example.couplecanvas.feature.overlay.CoupleOverlayService
 import com.example.couplecanvas.feature.overlay.OverlayPermission
 import com.example.couplecanvas.presentation.component.EmptyState
+import com.example.couplecanvas.presentation.component.LegalLinksCard
 import com.example.couplecanvas.presentation.component.RoundedPastelButton
 import com.example.couplecanvas.presentation.component.SecondaryPastelButton
 import com.example.couplecanvas.presentation.navigation.LocalAppContainer
@@ -300,6 +301,9 @@ fun HomeScreen(
                         )
                     }
                 }
+            }
+            item {
+                LegalLinksCard(Modifier.fillMaxWidth())
             }
         }
     }

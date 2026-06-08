@@ -1,5 +1,8 @@
 package com.example.couplecanvas.presentation.component
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,6 +43,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,6 +55,7 @@ import com.example.couplecanvas.presentation.theme.WarmBlack
 import com.example.couplecanvas.presentation.theme.WarmGray
 import com.example.couplecanvas.presentation.theme.WarmSurface
 import com.example.couplecanvas.presentation.theme.WarmSurfaceAlt
+import com.example.couplecanvas.util.ReleaseLegalConfig
 
 @Composable
 fun RoundedPastelButton(
@@ -88,6 +93,44 @@ fun SecondaryPastelButton(text: String, onClick: () -> Unit, modifier: Modifier 
 }
 
 @Composable
+fun LegalLinksCard(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val legalLinks = ReleaseLegalConfig.current()
+    SoftCard(modifier) {
+        SectionTitle("개인정보 처리")
+        Text(
+            if (legalLinks.isReleaseReady) {
+                "개인정보처리방침, 계정/데이터 삭제 요청, 문의 경로가 준비되어 있어요."
+            } else {
+                "출시 전 운영자 연락처, 개인정보처리방침 URL, 계정/데이터 삭제 URL을 설정해야 해요."
+            },
+            color = WarmGray,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SecondaryPastelButton(
+                "처리방침",
+                onClick = { context.openWebUrl(legalLinks.privacyPolicyUrl) },
+                modifier = Modifier.weight(1f),
+                enabled = legalLinks.hasPrivacyPolicyUrl,
+            )
+            SecondaryPastelButton(
+                "삭제 요청",
+                onClick = { context.openWebUrl(legalLinks.accountDeletionUrl) },
+                modifier = Modifier.weight(1f),
+                enabled = legalLinks.hasAccountDeletionUrl,
+            )
+        }
+        SecondaryPastelButton(
+            "문의 메일 보내기",
+            onClick = { context.sendSupportEmail(legalLinks.supportEmail) },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = legalLinks.hasSupportEmail,
+        )
+    }
+}
+
+@Composable
 fun CuteTopBar(
     title: String,
     subtitle: String? = null,
@@ -111,6 +154,22 @@ fun CuteTopBar(
             if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = WarmGray, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         action?.invoke()
+    }
+}
+
+private fun Context.openWebUrl(url: String) {
+    runCatching {
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+}
+
+private fun Context.sendSupportEmail(email: String) {
+    runCatching {
+        val uri = Uri.parse("mailto:$email")
+        val intent = Intent(Intent.ACTION_SENDTO, uri)
+            .putExtra(Intent.EXTRA_SUBJECT, "lovedraw 문의")
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
     }
 }
 

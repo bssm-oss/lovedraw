@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.couplecanvas.BuildConfig
 import com.example.couplecanvas.presentation.component.BrandIconTile
+import com.example.couplecanvas.presentation.component.LegalLinksCard
 import com.example.couplecanvas.presentation.component.RoundedPastelButton
 import com.example.couplecanvas.presentation.component.SecondaryPastelButton
 import com.example.couplecanvas.presentation.navigation.LocalAppContainer
@@ -130,7 +133,9 @@ fun LoginScreen(onSignedIn: () -> Unit) {
                 .padding(horizontal = 32.dp, vertical = 36.dp),
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
@@ -152,6 +157,7 @@ fun LoginScreen(onSignedIn: () -> Unit) {
                     SecondaryDebugLoginButton(enabled = !isLoading, onClick = viewModel::signInForDebugTest)
                 }
                 uiState.error?.let { Text(it, color = Coral, style = MaterialTheme.typography.bodySmall) }
+                LegalLinksCard(Modifier.fillMaxWidth())
             }
         }
     }

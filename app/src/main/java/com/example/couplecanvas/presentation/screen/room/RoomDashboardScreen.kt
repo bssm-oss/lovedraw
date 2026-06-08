@@ -3,7 +3,6 @@ package com.example.couplecanvas.presentation.screen.room
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
@@ -89,6 +88,7 @@ import com.example.couplecanvas.presentation.component.CuteTopBar
 import com.example.couplecanvas.presentation.component.EmptyState
 import com.example.couplecanvas.presentation.component.FilterChipLike
 import com.example.couplecanvas.presentation.component.InviteShareDialog
+import com.example.couplecanvas.presentation.component.LegalLinksCard
 import com.example.couplecanvas.presentation.component.RoundedPastelButton
 import com.example.couplecanvas.presentation.component.SecondaryPastelButton
 import com.example.couplecanvas.presentation.component.SectionTitle
@@ -108,7 +108,6 @@ import com.example.couplecanvas.presentation.theme.WarmSurface
 import com.example.couplecanvas.util.ConnectionDisplayState
 import com.example.couplecanvas.util.DateIdeaGenerator
 import com.example.couplecanvas.util.DatePlanMatcher
-import com.example.couplecanvas.util.ReleaseLegalConfig
 import com.example.couplecanvas.util.ShareCardGenerator
 import com.example.couplecanvas.util.StatsCalculator
 import com.example.couplecanvas.util.connectionDisplayState
@@ -1545,7 +1544,6 @@ private fun StatsTab(uiState: RoomFeatureUiState, viewModel: RoomFeatureViewMode
     var locationError by remember { mutableStateOf<String?>(null) }
     val localLocationShare = uiState.locationShares.firstOrNull { it.uid == uiState.localUid }
     val partnerLocationShare = uiState.locationShares.firstOrNull { it.uid != uiState.localUid }
-    val legalLinks = remember { ReleaseLegalConfig.current() }
     val localLocationConsent = localLocationShare?.enabled == true
     val partnerLocationConsent = partnerLocationShare?.enabled == true
     val canShareLocation = localLocationConsent && partnerLocationConsent
@@ -1689,37 +1687,7 @@ private fun StatsTab(uiState: RoomFeatureUiState, viewModel: RoomFeatureViewMode
             }
         }
         item {
-            SoftCard(Modifier.fillMaxWidth()) {
-                SectionTitle("개인정보 처리")
-                Text(
-                    if (legalLinks.isReleaseReady) {
-                        "개인정보처리방침, 계정/데이터 삭제 요청, 문의 경로가 준비되어 있어요."
-                    } else {
-                        "출시 전 운영자 연락처, 개인정보처리방침 URL, 계정/데이터 삭제 URL을 설정해야 해요."
-                    },
-                    color = WarmGray,
-                )
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SecondaryPastelButton(
-                        "처리방침",
-                        onClick = { context.openWebUrl(legalLinks.privacyPolicyUrl) },
-                        modifier = Modifier.weight(1f),
-                        enabled = legalLinks.hasPrivacyPolicyUrl,
-                    )
-                    SecondaryPastelButton(
-                        "삭제 요청",
-                        onClick = { context.openWebUrl(legalLinks.accountDeletionUrl) },
-                        modifier = Modifier.weight(1f),
-                        enabled = legalLinks.hasAccountDeletionUrl,
-                    )
-                }
-                SecondaryPastelButton(
-                    "문의 메일 보내기",
-                    onClick = { context.sendSupportEmail(legalLinks.supportEmail) },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = legalLinks.hasSupportEmail,
-                )
-            }
+            LegalLinksCard(Modifier.fillMaxWidth())
         }
     }
 }
@@ -1757,22 +1725,6 @@ private fun Long?.toDateTimeText(): String =
 private fun Context.hasLocationPermission(): Boolean =
     checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
         checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-
-private fun Context.openWebUrl(url: String) {
-    runCatching {
-        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    }
-}
-
-private fun Context.sendSupportEmail(email: String) {
-    runCatching {
-        val uri = Uri.parse("mailto:$email")
-        val intent = Intent(Intent.ACTION_SENDTO, uri)
-            .putExtra(Intent.EXTRA_SUBJECT, "lovedraw 문의")
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        startActivity(intent)
-    }
-}
 
 @SuppressLint("MissingPermission")
 private fun shareOneShotLocation(
