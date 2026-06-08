@@ -88,6 +88,7 @@ Play Console Data safety 답변 초안은 [docs/play-console-data-safety-ko.md](
 - 알림과 다른 앱 위 표시는 사용자가 낙서 오버레이 기능을 이해한 뒤 요청한다.
 - Android 14 이상 foreground service 사용을 위해 Play Console App content에서 special use foreground service 사용 사유를 선언한다.
 - Data safety, 개인정보 처리방침, 앱 내부 권한 안내가 서로 다른 말을 하지 않도록 한다.
+- `ManifestPrivacyPolicyTest`가 카메라, 마이크, 연락처, SMS, 백그라운드 위치, 전체 패키지 조회, Accessibility Service 같은 미사용 민감 권한이 들어오지 않도록 막는다.
 
 ## 출시 전 점검
 
@@ -110,6 +111,7 @@ Play Console Data safety 답변 초안은 [docs/play-console-data-safety-ko.md](
 - QR 스캔으로 `lovedraw://invite?code=XXXXXX` 링크가 앱을 열고 코드 입장을 시도하는지 테스트
 - 출시 전 실기기 증거는 [docs/release-evidence-checklist.md](./docs/release-evidence-checklist.md)에 맞춰 로컬 `release-evidence/`에 보관하고 `./scripts/verify_release_evidence.sh`로 확인
 - 릴리스 빌드 전 `git ls-files`로 `google-services.json`, `firebase-debug.log`, `database-debug.log`, `.env`가 추적되지 않는지 확인
+- 릴리스 빌드 전 `./gradlew :app:testDebugUnitTest`로 manifest 권한 정책 테스트가 통과하는지 확인
 
 ## 참고 정책
 
